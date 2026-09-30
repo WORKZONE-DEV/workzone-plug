@@ -48,7 +48,9 @@ jobs:
         shell: bash
         run: |
           python -m pip install "pyinstaller==6.11.1"
-          python -m PyInstaller --onefile --console --name WorkZone --paths tools \
+          art=""   # Windows: our ASCII logo as the app icon, and a splash while it unpacks
+          if [ "$RUNNER_OS" = "Windows" ]; then art="--icon .github/app/icon.ico --splash .github/app/splash.png"; fi
+          python -m PyInstaller --onefile --console --name WorkZone --paths tools $art \
             --hidden-import devices --hidden-import registry --hidden-import mcp_bridge \
             --add-data "ui:ui" --add-data "socket:socket" --add-data "examples:examples" \
             --add-data "devices:devices" --add-data "VERSION:." \

@@ -93,3 +93,18 @@ class Launcher(unittest.TestCase):
                                capture_output=True, text=True, env=env, timeout=120)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("self-check: OK", r.stdout)
+
+    def test_start_screen_without_a_console_has_no_colour_codes(self):
+        import io
+        import launch
+        buf, real = io.StringIO(), sys.stdout
+        sys.stdout = buf
+        try:
+            launch.header(False)
+            launch.step(1, 4, "unpacking", False)
+            launch.done("", False)
+        finally:
+            sys.stdout = real
+        out = buf.getvalue()
+        self.assertNotIn(chr(27), out, "plain text when it isn't a real window (logs, pipes)")
+        self.assertIn("[1/4] unpacking", out)
