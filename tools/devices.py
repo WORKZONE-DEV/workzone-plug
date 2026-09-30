@@ -205,7 +205,7 @@ def merge(devices_json_path, found):
     return added
 
 
-PROFILES = Path(__file__).resolve().parent.parent / "devices" / "profiles"
+PROFILES = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)) / "devices" / "profiles"
 PROFILE_KINDS = {"tv", "speaker", "phone", "router", "printer", "storage", "device"}
 POWER_NAME = re.compile(r"^[a-z0-9][a-z0-9 ._():-]{0,60}$")
 

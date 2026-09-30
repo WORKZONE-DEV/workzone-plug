@@ -12,7 +12,7 @@ import re
 import sys
 from pathlib import Path
 
-SCHEMA_PATH = Path(__file__).resolve().parent.parent / "socket" / "plug.schema.json"
+SCHEMA_PATH = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)) / "socket" / "plug.schema.json"
 HOSTNAME = re.compile(r"^(?=.{1,253}\Z)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$", re.I)
 TYPES = {"object": dict, "array": list, "string": str}
 # Keywords this validator understands. An unknown one in the schema is an

@@ -8,3 +8,7 @@ keys/
 
 # Local notes
 _private/
+# App build outputs
+build/
+dist/
+*.spec

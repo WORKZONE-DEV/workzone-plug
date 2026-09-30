@@ -80,3 +80,16 @@ class Desktop(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Launcher(unittest.TestCase):
+    """The one-click app's own self-check (the cloud build runs the same check on the packed app)."""
+
+    def test_self_check_passes(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as d:
+            env = dict(os.environ, WORKZONE_HOME=d, PYTHONDONTWRITEBYTECODE="1")
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "launch.py"), "--check"],
+                               capture_output=True, text=True, env=env, timeout=120)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("self-check: OK", r.stdout)

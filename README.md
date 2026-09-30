@@ -10,14 +10,18 @@ It can only use what it declared. Change one byte and it won't run.
 
 ## Start
 
-1. Install Python 3.10 or newer.
-2. Double-click `start-workzone.bat` (Windows), or run:
+**Easiest:** download the app for your computer from
+[Releases](https://github.com/WORKZONE-DEV/workzone-plug/releases/latest) (Windows, Mac or Linux),
+double-click it, and Work Zone opens in your browser. Nothing else to install.
+Keep its small window open: that's where strict mode asks you to type `yes`.
+
+**From source:** install Python 3.10 or newer, then double-click `start-workzone.bat` (Windows) or run:
 
 ```bash
-python tools/workzone.py
+python tools/launch.py
 ```
 
-3. The dashboard opens at http://127.0.0.1:8770. Click **hello** in the Library.
+Then click **hello** in the Library.
 
 ## Folders
 
