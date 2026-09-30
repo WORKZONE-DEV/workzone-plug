@@ -1,0 +1,20 @@
+{
+  "plug": "0",
+  "id": "zone.work.snake",
+  "name": "Snake",
+  "version": "0.1.0",
+  "kind": "game",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "storage": "4KB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "The classic. Arrow keys, WASD or swipe. Keeps your best score on this device."
+}

@@ -3,14 +3,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const PAGES = ['ui/index.html', 'ui/landing.html', 'ui/desktop.html',
-  'examples/hello/app/index.html', 'examples/ticker/app/index.html', 'examples/escape-test/app/index.html',
-  'examples/wasm-add/app/index.html', 'examples/component/app/index.html'];
+const PAGES = ['ui/index.html', 'ui/landing.html', 'ui/desktop.html'].concat(
+  readdirSync(join(root, 'examples')).filter((d) => existsSync(join(root, 'examples', d, 'app', 'index.html'))).map((d) => 'examples/' + d + '/app/index.html'));
 const SCRIPTS = ['socket/plug-socket.js', 'socket/host-kit.js', 'socket/wiring.js',
   'examples/gallery/app/app.js', 'examples/component/app/brick-counter.js'];
 
@@ -44,4 +43,10 @@ test('risky dashboard actions only go through press-and-hold (scripts cannot pre
     assert.ok(html.includes("risky('" + path + "'"), path + ' goes through risky()');
   }
   assert.match(html, /if \(!e\.isTrusted \|\| t\) return;/, 'faked clicks and key presses are ignored');
+});
+
+test('no plug uses a <form>: forms are blocked inside the box, so it would silently do nothing', () => {
+  for (const p of PAGES.filter((x) => x.startsWith('examples/'))) {
+    assert.doesNotMatch(readFileSync(join(root, p), 'utf8'), /<form\b/i, p);
+  }
 });

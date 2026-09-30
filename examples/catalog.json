@@ -1,0 +1,89 @@
+{
+ "about": "The official catalog: which example plugs are signed with the official key and in which category.",
+ "plugs": [
+  {
+   "folder": "notes",
+   "category": "Everyday"
+  },
+  {
+   "folder": "todo",
+   "category": "Everyday"
+  },
+  {
+   "folder": "focus-timer",
+   "category": "Everyday"
+  },
+  {
+   "folder": "calculator",
+   "category": "Everyday"
+  },
+  {
+   "folder": "markdown-writer",
+   "category": "Everyday"
+  },
+  {
+   "folder": "doom",
+   "category": "Games"
+  },
+  {
+   "folder": "snake",
+   "category": "Games"
+  },
+  {
+   "folder": "music-player",
+   "category": "Music"
+  },
+  {
+   "folder": "beat-pad",
+   "category": "Music"
+  },
+  {
+   "folder": "echo-synth",
+   "category": "Music"
+  },
+  {
+   "folder": "media-deck",
+   "category": "Media"
+  },
+  {
+   "folder": "sketch-pad",
+   "category": "Creative"
+  },
+  {
+   "folder": "weather",
+   "category": "Info"
+  },
+  {
+   "folder": "world-clock",
+   "category": "Info"
+  },
+  {
+   "folder": "space-live",
+   "category": "Info"
+  },
+  {
+   "folder": "json-tool",
+   "category": "Developer"
+  },
+  {
+   "folder": "wasm-add",
+   "category": "Developer"
+  },
+  {
+   "folder": "component",
+   "category": "Developer"
+  },
+  {
+   "folder": "hello",
+   "category": "Starter"
+  },
+  {
+   "folder": "gallery",
+   "category": "Starter"
+  },
+  {
+   "folder": "ticker",
+   "category": "Starter"
+  }
+ ]
+}

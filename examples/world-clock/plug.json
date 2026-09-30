@@ -1,0 +1,20 @@
+{
+  "plug": "0",
+  "id": "zone.work.world-clock",
+  "name": "World Clock",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "storage": "4KB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Clocks for the places you care about, using your device's own time zone data. No internet needed."
+}

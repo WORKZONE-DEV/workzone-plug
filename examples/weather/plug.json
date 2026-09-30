@@ -1,0 +1,24 @@
+{
+  "plug": "0",
+  "id": "zone.work.weather",
+  "name": "Weather",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "network": [
+      "api.open-meteo.com",
+      "geocoding-api.open-meteo.com"
+    ],
+    "storage": "4KB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Current weather and the week ahead for any city, from Open-Meteo (free, no account). It can only reach Open-Meteo."
+}

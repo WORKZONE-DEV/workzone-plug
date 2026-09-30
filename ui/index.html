@@ -302,7 +302,7 @@ dialog .row{justify-content:flex-end}
  <section id="term" class="glass-m" data-hint="Terminals: the live log (green = allowed, pink = refused), the report card, the fit check, AI tools and saved workzones.">
   <div class="flyout" id="termFly"><button class="handle" type="button" id="termTitle" data-hint="Hover or tap to switch: terminal, links, report card, fit check, AI, workzones">Terminal</button>
   <div class="bar tabs" id="tabs">
-   <button data-tab="log" class="on">Terminal</button><button data-tab="deck">Deck</button><button data-tab="links">Links</button><button data-tab="report">Report card</button><button data-tab="fit">Fit check</button><button data-tab="ai">AI</button><button data-tab="zones">Workzones</button><button data-tab="devices">Devices</button>
+   <button data-tab="log" class="on">Terminal</button><button data-tab="deck">Deck</button><button data-tab="links">Links</button><button data-tab="report">Report card</button><button data-tab="fit">Fit check</button><button data-tab="ai">AI</button><button data-tab="zones">Workzones</button><button data-tab="devices">Devices</button><button data-tab="catalog">Catalog</button>
   </div></div>
   <div class="pane on" id="p-log"></div>
   <div class="pane" id="p-deck"></div>
@@ -312,6 +312,7 @@ dialog .row{justify-content:flex-end}
   <div class="pane" id="p-ai"></div>
   <div class="pane" id="p-zones"></div>
   <div class="pane" id="p-devices"></div>
+  <div class="pane" id="p-catalog"></div>
  </section>
 </div>
 <div id="hint"><b>HINT</b><span id="hintText">Hover over anything to see what it does. Drop any file or folder anywhere to check it.</span></div>
@@ -1023,7 +1024,7 @@ dialog .row{justify-content:flex-end}
     store('updSeen', Date.now());
     if (r.error) { $('updText').textContent = r.error; return; }
     if (!r.configured) { $('updText').textContent = 'You are on ' + r.current + '. To let Work Zone ask for the newest version, add update.json (see docs/DEVELOPERS.md). Or check the project page.'; return; }
-    $('updText').textContent = r.newer ? 'Version ' + r.latest + ' is out (you have ' + r.current + '). ' + (r.notes || '') + ' Download it yourself when you are ready; undo always works.' : 'You are up to date (' + r.current + ').';
+    $('updText').textContent = r.newer ? 'Version ' + r.latest + ' is out (you have ' + r.current + '). Get it from ' + (r.page || 'the project page') + ' when you are ready; nothing is installed without you.' : 'You are up to date (' + r.current + ').';
   };
 
   // ---- devices: see what each device may do, switch any of it off
@@ -1159,8 +1160,50 @@ dialog .row{justify-content:flex-end}
     Array.prototype.forEach.call(document.querySelectorAll('.pane'), function (x) { x.classList.toggle('on', x.id === 'p-' + name); });
     if (name === 'links') renderLinks();
     if (name === 'devices') renderDevices();
+    if (name === 'catalog') renderCatalog();
     clearInterval(deckTimer);
     if (name === 'deck') { renderDeck(); deckTimer = setInterval(function () { if (!document.hidden) renderDeck(); }, 1000); }
+  }
+  // ---- official catalog: plugs signed by the Work Zone official key, pulled in one click.
+  // Every pull is checked by the helper: fingerprint, signature and official key. Then you're asked, as always.
+  var catalogData = null;
+  function renderCatalog() {
+    var pane = $('p-catalog'); pane.textContent = '';
+    pane.appendChild(el('div', 'mut', 'Official plugs, signed by the Work Zone official key. Every download is checked three ways (fingerprint, signature, official key) before it can run, and you still see its powers first.'));
+    var row = el('div', 'row'); row.style.margin = '8px 0';
+    var open = el('button', 'primary', catalogData ? 'refresh the catalog' : 'open the catalog');
+    open.onclick = async function () {
+      var r = await risky('/api/catalog', {}, 'Open the official catalog?', 'Work Zone will fetch the list of official plugs from this project\'s GitHub releases. Nothing is installed.');
+      if (r.cancelled) return;
+      if (r.error) return log(r.error, 'refused');
+      catalogData = r; log('official catalog ' + r.tag + ': ' + r.plugs.length + ' plugs', 'note'); renderCatalog();
+    };
+    row.appendChild(open); pane.appendChild(row);
+    if (!catalogData) return;
+    catalogData.categories.forEach(function (cat) {
+      var items = catalogData.plugs.filter(function (p) { return p.category === cat; });
+      if (!items.length) return;
+      pane.appendChild(el('h5', '', cat));
+      items.forEach(function (p) {
+        var card = el('div', 'dev');
+        var top = el('div', 'row');
+        top.appendChild(el('b', '', p.name + '  v' + p.version));
+        var newer = p.installed && p.installed !== p.version;
+        top.appendChild(el('span', newer ? 'allowed' : 'mut', p.installed ? (newer ? 'update: you have v' + p.installed : 'on your shelf') : ''));
+        var get = el('button', p.installed && !newer ? '' : 'primary', p.installed ? (newer ? 'update' : 'get again') : 'get');
+        get.onclick = async function () {
+          var x = await risky('/api/catalog-get', { id: p.id }, 'Get ' + p.name + '?', 'Downloads the official ' + p.name + ' plug (' + Math.max(1, Math.round(p.size / 1024)) + ' KB) and checks its fingerprint, signature and official key. Then it goes on your shelf and you are asked about its powers before it runs.');
+          if (x.cancelled) return;
+          if (x.error) return log(x.error, 'refused');
+          log(p.name + ' verified: fingerprint matches, official signature', 'allowed');
+          p.installed = p.version; renderCatalog(); refreshStatus(); addBrick(x, true);
+        };
+        top.appendChild(get); card.appendChild(top);
+        card.appendChild(el('div', 'mut', p.description));
+        card.appendChild(el('div', 'mut', 'powers: ' + (p.powers.length ? p.powers.join(', ') : 'none at all')));
+        pane.appendChild(card);
+      });
+    });
   }
   function renderZones() {
     var z = $('p-zones'); z.textContent = '';
@@ -1297,6 +1340,7 @@ dialog .row{justify-content:flex-end}
     var pad = $('box'); pad.textContent = '';
     var pages = Math.max(1, Math.ceil(padItems.length / PER_PAGE));
     if (padPage >= pages) padPage = pages - 1;
+    if (!(padPage >= 0)) padPage = 0;                  // never an empty page, whatever was clicked
     if (up === false) { pad.appendChild(el('div', 'empty', 'Start the helper to see the Library.')); $('padNav').hidden = true; return; }
     padItems.slice(padPage * PER_PAGE, padPage * PER_PAGE + PER_PAGE).forEach(function (it) {
       var t = el('button', 'tile');
@@ -1340,7 +1384,8 @@ dialog .row{justify-content:flex-end}
     for (var i = 0; i < pages; i++) nav.appendChild(el('span', 'dotp' + (i === padPage ? ' on' : '')));
     nav.appendChild(next);
   }
-  var LIB_KIND = { 'beat-pad': 'music', 'echo-synth': 'music', 'music-player': 'music', doom: 'game', 'escape-test': 'tool', gallery: 'widget', hello: 'panel', ticker: 'terminal', 'wasm-add': 'tool', component: 'widget' };
+  var LIB_KIND = { 'beat-pad': 'music', 'echo-synth': 'music', 'music-player': 'music', doom: 'game', snake: 'game', 'escape-test': 'tool', gallery: 'widget', hello: 'panel', ticker: 'terminal', 'wasm-add': 'tool', component: 'widget',
+    notes: 'panel', todo: 'panel', 'focus-timer': 'widget', calculator: 'tool', 'markdown-writer': 'panel', 'sketch-pad': 'tool', weather: 'widget', 'world-clock': 'widget', 'json-tool': 'terminal' };
   (function swipe() {
     var x0 = null;
     $('box').addEventListener('pointerdown', function (e) { x0 = e.clientX; });

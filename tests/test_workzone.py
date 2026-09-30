@@ -199,6 +199,14 @@ class Guard(unittest.TestCase):
         self.assertEqual(codes[:self.wz.RATE], [200] * self.wz.RATE)
         self.assertEqual(codes[self.wz.RATE:], [403, 403], "more than 5 a minute is refused")
 
+    def test_catalog_actions_need_a_person_and_an_opened_catalog(self):
+        self.assertIn("/api/catalog", self.wz.RISKY)
+        self.assertIn("/api/catalog-get", self.wz.RISKY)
+        self.state.catalog = None
+        s, out = self.req("POST", "/api/catalog-get", {"id": "zone.work.notes"})
+        self.assertEqual(s, 400)
+        self.assertIn("open the catalog first", out["error"])
+
     def test_only_listed_actions_can_be_confirmed(self):
         self.assertEqual(self.req("POST", "/api/confirm", {"action": "/api/anything"}, confirm=False)[0], 400)
 
@@ -285,10 +293,23 @@ class Extras(unittest.TestCase):
         self.tmp.cleanup()
         os.environ.pop("WORKZONE_HOME", None)
 
-    def test_update_check_does_nothing_unless_set_up(self):
-        r = self.wz.update_check()
-        self.assertFalse(r["configured"])
-        self.assertEqual(r["current"], self.wz.version())
+    def test_update_check_reads_githubs_latest_release(self):
+        import io
+
+        class Fake:
+            def open(self, req, timeout=0):
+                self.url = req.full_url
+                return io.BytesIO(json.dumps({"tag_name": "v99.0.0", "body": "big news"}).encode())
+        fake, old = Fake(), self.wz._SAFE_OPENER
+        self.wz._SAFE_OPENER = fake
+        try:
+            r = self.wz.update_check()
+        finally:
+            self.wz._SAFE_OPENER = old
+        self.assertEqual(fake.url, self.wz.DEFAULT_UPDATE)
+        self.assertTrue(r["newer"])
+        self.assertEqual(r["latest"], "99.0.0")
+        self.assertIn("releases", r["page"])
 
     def test_update_check_only_uses_https(self):
         (Path(self.tmp.name) / "update.json").write_text(json.dumps({"url": "http://example.com/x"}))

@@ -1,0 +1,20 @@
+{
+  "plug": "0",
+  "id": "zone.work.focus-timer",
+  "name": "Focus Timer",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "storage": "8KB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Work in focused blocks with short breaks (25/5 by default). A soft chime when time is up. No powers needed except saving your count."
+}

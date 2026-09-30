@@ -1,0 +1,19 @@
+{
+  "plug": "0",
+  "id": "zone.work.json-tool",
+  "name": "JSON Tool",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Check, tidy and shrink JSON, and see exactly where an error is. Works entirely inside the plug."
+}

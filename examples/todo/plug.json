@@ -1,0 +1,20 @@
+{
+  "plug": "0",
+  "id": "zone.work.todo",
+  "name": "To-Do",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "storage": "128KB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A simple to-do list: add, tick off, filter. Saved privately on this device."
+}

@@ -33,6 +33,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import catalog  # noqa: E402
 import fit  # noqa: E402
 import keys  # noqa: E402
 import mcp_bridge  # noqa: E402
@@ -52,6 +53,8 @@ RISKY = {
     "/api/update-check": "check online for a newer version",
     "/api/devices/scan": "scan your home network for devices",
     "/api/devices/set": "change a device switch",
+    "/api/catalog": "look up the official plug catalog online (GitHub)",
+    "/api/catalog-get": "download an official plug and put it on your shelf",
     "/api/strict": "switch strict mode OFF (risky actions would no longer need you to type yes here)",
 }
 PASS_LIFE = 30          # seconds a pass stays valid
@@ -77,6 +80,7 @@ class State:
         self.handoffs = {}                     # one-time id -> verified plug bytes (wz run)
         self.lock = threading.Lock()
         self.passes = {}                       # one-time pass -> (action, expires)
+        self.catalog = None                    # the last official catalog you opened (checked)
         self.recent = {}                       # action -> times it was confirmed
         self.strict = load_settings().get("strict", True) is not False   # safe by default; only an exact "false" turns it off
         self.asking = False                    # strict mode asks one question at a time
@@ -248,27 +252,32 @@ class _HttpsOnlyRedirects(urllib.request.HTTPRedirectHandler):
 _SAFE_OPENER = urllib.request.build_opener(_HttpsOnlyRedirects)
 
 
+DEFAULT_UPDATE = "https://api.github.com/repos/WORKZONE-DEV/workzone-plug/releases/latest"
+
+
 def update_check():
-    """Only if YOU set it up (WORKZONE_HOME/update.json {"url": "https://..."}): ask that address
-    what the newest version is. It only ever tells you; it never downloads or installs anything."""
+    """When YOU press "check now": ask this project's GitHub releases (or the address in
+    WORKZONE_HOME/update.json) what the newest version is. It only ever tells you; it never
+    downloads or installs anything."""
     cfg = home() / "update.json"
     cur = version()
-    if not cfg.exists():
-        return {"current": cur, "configured": False}
-    try:
-        url = json.loads(cfg.read_text(encoding="utf-8")).get("url", "")
-    except (OSError, ValueError):
-        return {"current": cur, "configured": False, "error": "update.json isn't readable"}
+    url = DEFAULT_UPDATE
+    if cfg.exists():
+        try:
+            url = json.loads(cfg.read_text(encoding="utf-8")).get("url", "")
+        except (OSError, ValueError):
+            return {"current": cur, "configured": False, "error": "update.json isn't readable"}
     if not isinstance(url, str) or not url.startswith("https://"):
         return {"current": cur, "configured": False, "error": "update.json needs an https:// address"}
     try:
         with _SAFE_OPENER.open(urllib.request.Request(url, headers={"User-Agent": "WorkZone"}), timeout=6) as r:
             info = json.loads(r.read(65536))
-        latest = str(info.get("version", ""))
+        latest = str(info.get("version") or info.get("tag_name") or "").lstrip("v")   # our format, or GitHub's
         if not re.fullmatch(r"\d+\.\d+\.\d+", latest):
             raise ValueError("no version number in the answer")
         return {"current": cur, "configured": True, "latest": latest, "newer": _ver(latest) > _ver(cur),
-                "notes": str(info.get("notes", ""))[:500]}
+                "notes": str(info.get("notes") or info.get("body") or "")[:500],
+                "page": f"https://github.com/{catalog.REPO}/releases/latest"}
     except Exception as e:  # noqa: BLE001 - a failed check is just "couldn't check", never a crash
         return {"current": cur, "configured": True, "error": f"couldn't check ({type(e).__name__})"}
 
@@ -462,6 +471,31 @@ def api(state, path, body):
         return 200, {"devices": load_devices(), "added": added}
     if path == "/api/devices/set":
         return 200, {"devices": set_device_power(body.get("name"), body.get("power"), body.get("on"), body.get("address"))}
+    if path == "/api/catalog":
+        try:
+            state.catalog = catalog.load(not_older_than=version())
+        except (OSError, ValueError) as e:
+            return 502, {"error": f"couldn't open the official catalog ({e})"}
+        have = {}
+        for e in shelf():
+            have[e["id"]] = e["version"]
+        return 200, {"tag": state.catalog["tag"], "categories": catalog.CATEGORIES,
+                     "plugs": [dict(e, installed=have.get(e["id"])) for e in state.catalog["plugs"]]}
+    if path == "/api/catalog-get":
+        pid = body.get("id")
+        if not isinstance(pid, str):
+            return 400, {"error": "id must be text"}
+        if not state.catalog:
+            return 400, {"error": "open the catalog first"}
+        try:
+            data, _ = catalog.get(state.catalog, pid)      # fingerprint + signature + official key, or refused
+        except OSError as e:
+            return 502, {"error": f"couldn't download it ({type(e).__name__})"}
+        with tempfile.TemporaryDirectory() as d:          # onto your shelf, so it stays in your Library
+            f = Path(d) / "official.plug"
+            f.write_bytes(data)
+            registry.add(f)
+        return 200, dict(plug_summary(data), official=True)
     if path == "/api/registry-get":
         f = body.get("file")
         if not isinstance(f, str):

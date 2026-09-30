@@ -1,0 +1,20 @@
+{
+  "plug": "0",
+  "id": "zone.work.sketch-pad",
+  "name": "Sketch Pad",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "storage": "4MB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Draw with mouse, pen or finger: colours, brush sizes, eraser, undo. Your drawing saves on this device."
+}

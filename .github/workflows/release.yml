@@ -77,10 +77,28 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - uses: actions/download-artifact@v4
         with:
           path: files
           merge-multiple: true
+
+      - name: Sign the official catalog, then check it with the download rules
+        env:
+          OFFICIAL_KEY: ${{ secrets.WORKZONE_OFFICIAL_KEY }}
+        run: |
+          umask 077
+          key="$RUNNER_TEMP/official.key"
+          trap 'rm -f "$key"' EXIT          # gone even if a step fails
+          printf '%s\n' "$OFFICIAL_KEY" > "$key"
+          python tools/catalog.py build catalog "$key" "$GITHUB_REF_NAME"
+          rm -f "$key"
+          python tools/catalog.py verify catalog
 
       - name: Publish the release
         env:
@@ -103,7 +121,9 @@ jobs:
           **Linux:** `chmod +x WorkZone-Linux` then run it.
 
           Built from this exact source by GitHub, after every test passed on all three systems. Check your download against `SHA256SUMS.txt`.
+
+          **Official catalog:** the `.plug` files and `catalog.json` here are the official plugs, signed with the Work Zone official key. Open the **Catalog** tab in Work Zone to get them in one click; every download is checked (fingerprint, signature, official key) before it can run.
           EOF
           sed -i 's/^          //' notes.md
-          gh release create "$GITHUB_REF_NAME" files/WorkZone-Windows.exe files/WorkZone-macOS files/WorkZone-Linux files/SHA256SUMS.txt \
+          gh release create "$GITHUB_REF_NAME" files/WorkZone-Windows.exe files/WorkZone-macOS files/WorkZone-Linux files/SHA256SUMS.txt catalog/catalog.json catalog/*.plug \
             --repo "$GITHUB_REPOSITORY" --title "Work Zone $GITHUB_REF_NAME" --notes-file notes.md

@@ -1,0 +1,20 @@
+{
+  "plug": "0",
+  "id": "zone.work.markdown-writer",
+  "name": "Markdown Writer",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "storage": "512KB",
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Write in Markdown and see it formatted as you type. Saved privately on this device."
+}

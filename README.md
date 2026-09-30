@@ -21,7 +21,9 @@ Keep its small window open: that's where strict mode asks you to type `yes`.
 python tools/launch.py
 ```
 
-Then click **hello** in the Library.
+Then click **hello** in the Library, or open the **Catalog** tab for the official plugs (notes, to-do,
+timer, calculator, weather, Doom, music and more). Every catalog download is checked three ways
+(fingerprint, signature, official Work Zone key) before it can run.
 
 ## Folders
 
@@ -32,7 +34,7 @@ Then click **hello** in the Library.
 | `tools/` | The commands: make a key, pack, check, fit, run |
 | `examples/` | 12 ready plugs, including Doom, a media player and live space data |
 | `tests/` | Proof it works |
-| `docs/` | How to make your own plug |
+| `docs/` | How to make your own plug, and the proof of how it's tested |
 | `devices/` | How devices work, and device profiles (an example TV) |
 
 ## Commands
@@ -53,6 +55,8 @@ node --test --test-concurrency=1 "tests/js/*.test.mjs"
 
 Every check has a test that proves it can say no. Every single byte of a plug is flipped in turn,
 and every flip is rejected.
+
+What was tested, attacked and fixed: [docs/PROOF.md](docs/PROOF.md).
 
 ## Safety
 

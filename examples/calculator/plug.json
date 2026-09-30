@@ -1,0 +1,19 @@
+{
+  "plug": "0",
+  "id": "zone.work.calculator",
+  "name": "Calculator",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A clean calculator with history and keyboard support. Needs no powers at all."
+}
