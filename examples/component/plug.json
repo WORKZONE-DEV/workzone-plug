@@ -1,0 +1,22 @@
+{
+  "plug": "0",
+  "id": "zone.work.component",
+  "name": "Brick Counter",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "ui": "panel",
+    "events": [
+      "count.changed"
+    ]
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A web component (a reusable custom HTML tag) running inside a plug."
+}

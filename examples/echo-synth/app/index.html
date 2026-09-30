@@ -1,0 +1,87 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Echo Synth</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#15131c;color:#ece8ff;font:14px/1.4 system-ui,sans-serif}
+.wrap{width:min(560px,94vw)}
+h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#8fa3ff;margin:0 0 12px}
+.keys{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.key{height:120px;border-radius:0 0 10px 10px;border:0;background:#ece8ff;color:#15131c;font:600 12px ui-monospace,Consolas,monospace;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;cursor:pointer}
+.key.down{background:#8fa3ff}
+.knobs{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;margin-top:14px}
+input[type=range]{accent-color:#8fa3ff;width:100%}
+label{color:#9d96bf}
+small{color:#9d96bf;display:block;margin-top:10px}
+</style>
+<div class="wrap">
+  <h1>Echo Synth</h1>
+  <div class="keys" id="keys"></div>
+  <div class="knobs">
+    <label for="echo">echo time</label><input id="echo" type="range" min="0.05" max="0.8" step="0.01" value="0.3"><span id="echoV"></span>
+    <label for="fb">echo repeats</label><input id="fb" type="range" min="0" max="0.85" step="0.01" value="0.45"><span id="fbV"></span>
+    <label for="wave">sound</label>
+    <select id="wave"><option>triangle</option><option>sine</option><option>square</option><option>sawtooth</option></select><span></span>
+  </div>
+  <small>tap a key once to switch sound on, then play with A S D F G H J K &middot; link it to Beat Pad and it plays along</small>
+</div>
+<script>
+// ---------------------------------------------------------------------------
+// Learn by changing things: press "edit code", change a CHANGE ME, Save & run.
+// ---------------------------------------------------------------------------
+var NOTES = [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3];   // CHANGE ME: a C major scale (Hz)
+var KEYS = 'asdfghjk';                                                  // CHANGE ME: which computer keys play
+var NOTE_LENGTH = 0.4;                                                  // CHANGE ME: seconds each note rings
+var PLAY_ALONG = [0, 2, 4, 2];                                          // CHANGE ME: notes played along with Beat Pad
+
+var audio = null, delay, feedback, master;
+function start() {
+  if (audio) return;
+  audio = new AudioContext();                   // sound can only start after a tap or key press
+  delay = audio.createDelay(1); feedback = audio.createGain();
+  master = audio.createGain(); master.gain.value = 0.7; master.connect(audio.destination);   // keeps it from clipping
+  delay.connect(feedback); feedback.connect(delay); delay.connect(master);
+  knobs();
+}
+function knobs() {
+  var e = document.getElementById('echo'), f = document.getElementById('fb');
+  document.getElementById('echoV').textContent = Number(e.value).toFixed(2) + 's';
+  document.getElementById('fbV').textContent = Math.round(f.value * 100) + '%';
+  if (audio) { delay.delayTime.value = Number(e.value); feedback.gain.value = Number(f.value); }
+}
+document.getElementById('echo').oninput = knobs;
+document.getElementById('fb').oninput = knobs;
+knobs();
+
+function play(i) {
+  start();
+  var t = audio.currentTime, o = audio.createOscillator(), g = audio.createGain();
+  o.type = document.getElementById('wave').value;
+  o.frequency.value = NOTES[i % NOTES.length];
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + NOTE_LENGTH);
+  o.connect(g); g.connect(master); g.connect(delay);                     // dry sound + into the echo
+  o.start(t); o.stop(t + NOTE_LENGTH + 0.05);
+  var k = keys[i % keys.length]; k.classList.add('down'); setTimeout(function () { k.classList.remove('down'); }, 150);
+}
+
+var box = document.getElementById('keys'), keys = [];
+NOTES.forEach(function (n, i) {
+  var b = document.createElement('button'); b.className = 'key'; b.textContent = (KEYS[i] || '').toUpperCase();
+  b.setAttribute('aria-label', 'note ' + (i + 1));
+  b.onpointerdown = function () { play(i); };
+  box.appendChild(b); keys.push(b);
+});
+addEventListener('keydown', function (e) {
+  if (e.repeat) return;
+  var i = KEYS.indexOf(e.key.toLowerCase()); if (i >= 0) play(i);
+});
+// Linked to Beat Pad? Its beat.step events arrive here (only if YOU linked them).
+var along = 0;
+addEventListener('message', function (e) {
+  var m = e.data;
+  if (m && m.topic === 'event' && m.name === 'beat.step' && audio && m.data % 4 === 0) play(PLAY_ALONG[along++ % PLAY_ALONG.length]);
+});
+document.addEventListener('visibilitychange', function () { if (audio) { if (document.hidden) audio.suspend(); else audio.resume(); } });
+parent.postMessage({ topic: 'event.subscribe', name: 'beat.step' }, '*');
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

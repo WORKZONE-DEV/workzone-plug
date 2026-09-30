@@ -1,0 +1,15 @@
+{
+  "plug": "0",
+  "id": "zone.work.doom",
+  "name": "Doom (Freedoom)",
+  "version": "0.1.1",
+  "kind": "game",
+  "entry": "index.html",
+  "views": ["2d"],
+  "hosts": ["any"],
+  "permissions": {
+    "ui": "window"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "The classic game engine (doomgeneric, GPL) with Freedoom's free levels (BSD), sealed in a plug with zero powers: no internet, no storage, nothing."
+}

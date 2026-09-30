@@ -1,0 +1,15 @@
+{
+  "plug": "0",
+  "id": "zone.work.music-player",
+  "name": "Music Player",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Drop your own songs in and play them. Zero powers: your files stay on your device and nothing is uploaded anywhere."
+}

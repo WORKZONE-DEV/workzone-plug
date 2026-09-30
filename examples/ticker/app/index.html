@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Ticker</title>
+<style>body{margin:0;display:grid;place-items:center;height:100vh;background:#13101c;color:#7be0ad;font:600 28px ui-monospace,Consolas,monospace}</style>
+<div id="t">tick 0</div>
+<script>
+// Says "clock.tick" every 2 seconds. Who hears it is decided by the PERSON, not by this plug.
+var n = 0;
+setInterval(function () {
+  n++;
+  document.getElementById('t').textContent = 'tick ' + n;
+  parent.postMessage({ topic: 'event.publish', name: 'clock.tick', data: n }, '*');
+}, 2000);
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

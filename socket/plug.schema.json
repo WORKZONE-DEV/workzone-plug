@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "plug.schema.json",
+  "title": "Plug manifest v0 (plug.json)",
+  "description": "Draft v0. Describes one plug: what it is, where it runs, what it may touch, and who signed it. Deny by default: anything not listed in permissions is unreachable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["plug", "id", "name", "version", "kind", "entry", "views", "permissions", "author_key"],
+  "properties": {
+    "plug": { "const": "0", "description": "Manifest format version." },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$", "description": "Reverse-domain id, e.g. zone.work.hello" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "^[^\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]+$", "description": "Shown to people in prompts: no control, hidden or direction-changing characters." },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "kind": { "enum": ["panel", "game", "world", "island", "skin", "tool", "widget", "service", "terminal", "feed"] },
+    "entry": { "type": "string", "description": "Path inside app/ - index.html, a .wasm, or a .glb scene." },
+    "views": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["panel", "2d", "3d", "ascii", "headless"] } },
+    "hosts": { "type": "array", "uniqueItems": true, "items": { "enum": ["web", "hud", "world", "desktop", "any"] }, "default": ["any"] },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Everything the plug may use. Omitted = denied.",
+      "properties": {
+        "identity": { "enum": ["none", "public-key"], "default": "none", "description": "Never personal data - at most the user's public key." },
+        "storage": { "type": "string", "pattern": "^\\d+(KB|MB)$", "description": "Private, on-device quota, e.g. 5MB." },
+        "network": { "type": "array", "items": { "type": "string", "format": "hostname" }, "description": "The ONLY hosts reachable, and only through the host gateway." },
+        "events": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+([.-][a-z0-9]+)*$" }, "description": "Named bus topics it may publish/subscribe to, e.g. market.tick" },
+        "ai": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9_.-]{1,64}$" }, "description": "MCP tool names it may call." },
+        "ui": { "enum": ["none", "panel", "window", "fullscreen", "in-world"], "default": "panel" }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Reproducible-build fingerprint.",
+      "properties": {
+        "source_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "recipe": { "type": "string" }
+      }
+    },
+    "author_key": { "type": "string", "pattern": "^ed25519:[0-9a-f]{64}$", "description": "Author's public key (hex)." },
+    "built_on": {
+      "type": "array",
+      "description": "The bricks this one was built on top of (family tree back to the original bricks). Credit travels with the file.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "author_key", "fingerprint"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+          "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "author_key": { "type": "string", "pattern": "^ed25519:[0-9a-f]{64}$" },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "sha256 of the exact .plug file it was built on." }
+        }
+      }
+    },
+    "description": { "type": "string", "maxLength": 280, "pattern": "^[^\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]+$" }
+  }
+}

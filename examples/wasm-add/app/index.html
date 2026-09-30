@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>WebAssembly Add</title>
+<style>body{margin:0;display:grid;place-items:center;height:100vh;background:#13101c;color:#ece8ff;font:600 20px ui-monospace,Consolas,monospace}input{width:60px;font:inherit;background:#0f0d17;color:#ece8ff;border:1px solid #2c2642;border-radius:6px;padding:4px}b{color:#7be0ad}</style>
+<div><input id="a" value="2"> + <input id="b" value="40"> = <b id="r">?</b><div id="how" style="font-size:12px;color:#9d96bf;margin-top:8px"></div></div>
+<script>
+// add.wasm ships INSIDE this plug (sealed and fingerprinted like every other file).
+// plugFile() hands it over from the verified file list; nothing is downloaded.
+WebAssembly.instantiate(plugFile('add.wasm')).then(function (w) {
+  var add = w.instance.exports.add;
+  function run() {
+    var r = add(+document.getElementById('a').value | 0, +document.getElementById('b').value | 0);
+    document.getElementById('r').textContent = r;
+    parent.postMessage({ topic: 'event.publish', name: 'wasm.result', data: r }, '*');   // declared event
+  }
+  document.getElementById('a').oninput = document.getElementById('b').oninput = run;
+  run();
+  document.getElementById('how').textContent = 'computed by WebAssembly';
+}, function (e) { document.getElementById('r').textContent = 'wasm blocked: ' + e.message; });
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

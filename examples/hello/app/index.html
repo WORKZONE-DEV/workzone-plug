@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hello Plug</title>
+<style>body{margin:0;font:600 18px/1.4 system-ui,sans-serif;display:grid;place-items:center;height:100vh;background:#fcfbff;color:#2b2450}b{color:#ff6fae}</style>
+<p>Hello from a <b>plug</b>. <span id="n"></span></p>
+<script>
+// The only way out of a plug is the socket's message API (postMessage to the host).
+// The socket checks every message against plug.json; anything undeclared is refused.
+var pings = 0;
+addEventListener('message', function (e) {
+  var m = e.data;
+  if (m && m.topic === 'event' && m.name === 'hello.ping') {
+    document.getElementById('n').textContent = '(pinged ' + (++pings) + 'x)';
+    parent.postMessage({ topic: 'event.publish', name: 'hello.ping', data: 'pong' }, '*');
+  }
+});
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

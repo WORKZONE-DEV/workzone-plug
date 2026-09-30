@@ -1,0 +1,16 @@
+{
+  "plug": "0",
+  "id": "zone.work.escape-test",
+  "name": "Escape Test",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "events": ["escape.report"],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A deliberately naughty plug for testing the socket. It tries to break out of its box and reports what happened. Every attempt should be blocked."
+}

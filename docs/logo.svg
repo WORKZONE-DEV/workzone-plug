@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="684" height="210" viewBox="0 0 684 210" role="img" aria-label="WORK ZONE: two halves that don't fit, then fit and seal">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; font-size: 16px; white-space: pre; }
+    .a { fill: #ff6fae; animation: a 12s cubic-bezier(.16,1,.3,1) infinite; }
+    .b { fill: #8fa3ff; animation: b 12s cubic-bezier(.16,1,.3,1) infinite, bc 12s linear infinite; }
+    .glow { animation: glow 12s ease infinite; }
+    @keyframes a {
+      0% { transform: translateX(-150px); opacity: 0; }
+      8.75% { transform: translateX(0); opacity: 1; }
+      21% { transform: translateX(0); }
+      26.25% { transform: translateX(-28.799999999999997px); }
+      32.67%, 100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes b {
+      0% { transform: translateX(150px); opacity: 0; }
+      8.75% { transform: translateX(9.6px); opacity: 1; }
+      12.83% { transform: translateX(9.6px); }
+      13.42% { transform: translateX(10.799999999999999px); } 14% { transform: translateX(8.4px); }
+      14.58% { transform: translateX(10.799999999999999px); } 15.17% { transform: translateX(8.4px); }
+      15.75%, 21% { transform: translateX(9.6px); }
+      26.25% { transform: translateX(38.4px); }
+      32.67%, 100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes bc {
+      0%, 12.25% { fill: #8fa3ff; } 12.83%, 21% { fill: #ff4d6d; } 23.33%, 32.67% { fill: #8fa3ff; } 35%, 100% { fill: #ff6fae; }
+    }
+    @keyframes glow { 0%, 32.67% { filter: none; } 37.33%, 100% { filter: url(#g); } }
+    .s { font-size: 13px; opacity: 0; }
+    .s1 { fill: #9d96bf; animation: s1 12s infinite; } .s2 { fill: #ff4d6d; animation: s2 12s infinite; }
+    .s3 { fill: #9d96bf; animation: s3 12s infinite; } .s4 { fill: #7be0ad; animation: s4 12s infinite; }
+    @keyframes s1 { 0%, 11.67% { opacity: 1; } 12.25%, 100% { opacity: 0; } }
+    @keyframes s2 { 0%, 12.25% { opacity: 0; } 12.83%, 21% { opacity: 1; } 21.58%, 100% { opacity: 0; } }
+    @keyframes s3 { 0%, 21.58% { opacity: 0; } 22.17%, 32.67% { opacity: 1; } 33.25%, 100% { opacity: 0; } }
+    @keyframes s4 { 0%, 33.25% { opacity: 0; } 33.83%, 100% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .a, .b, .glow, .s1, .s2, .s3, .s4 { animation-duration: 18s; }  /* motion off: same loop, calmer */
+    }
+  </style>
+  <defs><filter id="g" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="100%" height="100%" rx="14" fill="#13101c"/>
+  <g class="glow">
+  <g class="a">
+    <text x="59.2" y="48">          _ _ _   _ _   _ _     _ _ _   _ _   _   _   _ _ _</text>
+    <text x="59.2" y="67">| |     / / _   / _   / / _     _   /     _ \       / _ _ /</text>
+    <text x="59.2" y="86">| | /             _     &lt;             / / / /   / /   _ </text>
+    <text x="59.2" y="105">| |   / / / / / _   / /         / / _   _     |   / / _ </text>
+    <text x="59.2" y="124">| _ | _ \ _ _ _   _ _   _       _ _ / _ _ / / | / _ _ _ </text>
+  </g>
+  <g class="b">
+    <text x="59.2" y="48"> _       _ _ _   _ _   _   _     _ _     _ _       _ _ _ _ </text>
+    <text x="59.2" y="67">             _ \   _ \   / /   / _     / _   / | / /   _ _ </text>
+    <text x="59.2" y="86">     | / / / / / / / / ,         / /           |   / _ /</text>
+    <text x="59.2" y="105">   / |     _     , _   | |         _ / / / / /   /   _ _</text>
+    <text x="59.2" y="124"> _ / _ / _ _ / / | / / | |     / _ _ \ _ _ _   _ / _ _ /</text>
+  </g>
+  </g>
+  <g text-anchor="middle">
+    <text class="s s1" x="342.0" y="176">two halves. will they fit?</text>
+    <text class="s s2" x="342.0" y="176">x  doesn't fit: refused</text>
+    <text class="s s3" x="342.0" y="176">checking the shape...</text>
+    <text class="s s4" x="342.0" y="176">fits. sealed. one piece.</text>
+  </g>
+</svg>

@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Work Zone Plug</title>
+<meta name="description" content="One signed file = one app that snaps into any host. Deny by default. Holds no user data.">
+<style>
+/* Dark terminal look. Green = allowed, pink/red = refused. */
+:root{--tone2:#8fa3ff;--bg:#13101c;--panel:#1b1728;--ink:#ece8ff;--muted:#9d96bf;--pink:#ff6fae;--line:#2c2642;--ok:#7be0ad;--bad:#ff8fa8;--code:#1d1930}
+:root[data-theme="light"]{--tone2:#4a5bd4;--bg:#fcfbff;--panel:#fff;--ink:#2b2450;--muted:#7a7399;--line:#ece8f7;--ok:#1f8a5b;--bad:#c2334d;--code:#f6f3ff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-snap-type:y mandatory}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:980px;margin:0 auto;padding:0 16px}
+nav{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;gap:18px;justify-content:flex-end;padding:14px max(16px,calc(50% - 474px));font-size:14px;flex-wrap:wrap;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(8px)}
+nav a{color:var(--muted);text-decoration:none}nav a:hover{color:var(--pink)}
+pre{font:13px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;margin:0;overflow-x:auto;color:var(--ink)}
+.hero{text-align:center;align-items:center}
+.hero pre{display:inline-block;text-align:left;color:var(--pink);font-size:clamp(7px,1.6vw,14px);line-height:1.15}
+.tag{font-size:clamp(20px,3.4vw,30px);font-weight:700;margin:20px 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);max-width:640px;margin:0 auto}
+.pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 0}
+.pill{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted);background:var(--panel)}
+/* One section = one screen. Each locks in place, and its content sits in the middle.
+   If the content is taller than the screen, the script below shrinks it to fit. */
+section{height:100vh;height:100svh;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;overflow:hidden;padding:calc(var(--navh,60px) + 8px) 0 16px}
+.inner{width:100%;display:flex;flex-direction:column;align-items:center}
+.box{text-align:left;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto}
+.grid .box{width:auto}.grid,.plain{width:100%}
+#dots{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:10px}
+#dots a{width:8px;height:8px;border-radius:50%;background:var(--line);transition:background .3s,transform .3s}
+#dots a.on{background:var(--pink);transform:scale(1.35)}
+@media (max-width:760px){#dots{display:none}}
+#logo{display:inline-grid;font-size:clamp(6px,1.45vw,15px);line-height:1.15;cursor:pointer;overflow:visible}
+#logo>span{grid-area:1/1;white-space:pre;will-change:transform,opacity;transition:transform .95s cubic-bezier(.16,1,.3,1),opacity .6s ease,color .5s ease,text-shadow .8s ease}
+#logo .la{color:var(--pink)}#logo .lb{color:var(--tone2)}
+#logo.still>span{transition:none}
+#logo.jam .lb{color:var(--bad);animation:rattle .09s linear 5 alternate}
+@keyframes rattle{from{translate:-.12ch 0}to{translate:.12ch 0}}
+#logo.merged>span{color:var(--pink);text-shadow:0 0 14px color-mix(in srgb,var(--pink) 45%,transparent)}
+#fitline{font:13px ui-monospace,Consolas,monospace;color:var(--muted);height:1.6em;margin-top:6px;transition:color .3s}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+h3{font-size:24px;margin:0 0 14px;letter-spacing:-.01em}
+p.lead{color:var(--muted);margin:0 auto 18px;max-width:680px}
+.box{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:18px}
+.pink{color:var(--pink)}.ok{color:var(--ok)}.bad{color:var(--bad)}.mut{color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid>*{min-width:0}
+.box{overflow-x:auto;max-width:100%}
+body{overflow-x:hidden}
+.plain{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.plain>div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+.plain b{display:block;font-size:17px;margin-bottom:4px}
+.plain p{margin:0;color:var(--muted);font-size:15px}
+@media (max-width:760px){.plain{grid-template-columns:1fr}}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin:0}
+dt{font:600 14px ui-monospace,Consolas,monospace;color:var(--pink)}dd{margin:0;color:var(--muted)}
+@media (max-width:560px){dl{grid-template-columns:1fr}dd{margin-bottom:8px}}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+#circuit .row{white-space:pre}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.done{color:var(--ok);font-weight:600}.next{color:var(--pink);font-weight:600}.later{color:var(--muted)}
+footer{margin-top:24px;color:var(--muted);font-size:13px;text-align:center}
+.cursor{animation:blink 1s steps(1) infinite}@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor,#logo .lb{animation:none}html{scroll-behavior:auto}
+ #logo>span{transition-duration:1.4s,.9s,.75s,1.2s}}
+</style>
+</head>
+<body>
+<nav><a href="#top">Top</a><a href="#what">What is it</a><a href="#how">How it works</a><a href="#layers">Layers</a><a href="#gate">The gate</a><a href="#fit">Fit check</a><a href="#status">Status</a></nav>
+<main>
+
+<section class="hero" id="top">
+<pre id="logo" aria-label="WORK ZONE">
+ _       ______  ____  __ __    _____   ____  _   __ ______
+| |     / / __ \/ __ \/ //_/   /__  /  / __ \/ | / // ____/
+| | /| / / / / / /_/ / ,<        / /  / / / /  |/ // __/
+| |/ |/ / /_/ / _, _/ /| |      / /__/ /_/ / /|  // /___
+|__/|__/\____/_/ |_/_/ |_|     /____/\____/_/ |_//_____/
+</pre>
+<div id="fitline" aria-hidden="true"></div>
+<div class="tag">One file. One app. Any host.</div>
+<p class="sub">A plug is a single signed file that snaps into a website, a HUD, a game world or a desktop.
+It can only touch what it declared. The host holds no user data. Change one byte and it won't run.</p>
+<div class="pills"><span class="pill">deny by default</span><span class="pill">signed + fingerprinted</span><span class="pill">holds no user data</span><span class="pill">standard tools only</span><span class="pill">runs on your computer</span></div>
+</section>
+
+<section id="what">
+<h2>In plain words</h2>
+<h3>What is this, in 30 seconds</h3>
+<div class="plain">
+<div><b>The problem</b><p>Today every app is stuck to one website, one app store or one device. When you add someone else's tool to your site, it can usually see and do far more than it needs to, and your users' data ends up on someone else's servers.</p></div>
+<div><b>The idea</b><p>Think of a USB plug for software. A <span class="pink">plug</span> is one file holding a small app. Any <span class="pink">socket</span> (a website, a HUD, a game, a desktop) can run it. The socket decides what it's allowed to touch. The plug can't do anything more.</p></div>
+<div><b>Why you can trust it</b><p>The maker seals the file with a digital signature. If anyone changes a single byte, it won't run. It only gets what it asked for up front, and you approve that. Everything it tries is written down in a report card you can read.</p></div>
+</div>
+<div class="box" style="margin-top:16px"><pre>
+  <span class="mut">WITHOUT A PLUG</span>                           <span class="mut">WITH A PLUG</span>
+
+  your site  &lt;----- tool                    your site
+     |  <span class="bad">sees everything</span>                    +------------+
+     |  <span class="bad">sends your users' data</span>             |  SOCKET    |  <span class="ok">decides, logs</span>
+     |  <span class="bad">anywhere it likes</span>                  |  +------+  |
+     v                                     |  | plug |  |  <span class="ok">only what it asked,</span>
+  <span class="bad">someone else's servers</span>                   |  +------+  |  <span class="ok">only what you allowed</span>
+                                           +------------+
+</pre></div>
+</section>
+
+<section id="words">
+<h2>Words used here</h2>
+<h3>Ten words used on this page</h3>
+<p class="lead">The whole idea in ten words. Each one means exactly this, nothing more.</p>
+<div class="box"><dl>
+<dt>plug</dt><dd>one file that holds one small app (a <code>.plug</code> file)</dd>
+<dt>socket / host</dt><dd>the place a plug runs: a web page, a HUD, a game, a desktop</dd>
+<dt>manifest</dt><dd>the plug's label (<code>plug.json</code>): what it is, who made it, what it may touch</dd>
+<dt>permissions</dt><dd>the list of things it may touch. Not on the list = blocked</dd>
+<dt>signature</dt><dd>the maker's digital seal. Change the file and the seal breaks</dd>
+<dt>fingerprint</dt><dd>a short code worked out from a file's exact bytes. One byte different = a different fingerprint</dd>
+<dt>sandbox</dt><dd>the box the plug runs in: it can't see the page around it, your cookies, or your files</dd>
+<dt>gate</dt><dd>checks every single thing the plug asks for, answers yes or no, and writes it down</dd>
+<dt>gateway</dt><dd>the only road to the internet, and only to addresses the plug declared</dd>
+<dt>watchdog</dt><dd>keeps watching while it runs, and pulls the plug if it misbehaves</dd>
+</dl></div>
+</section>
+
+<section id="how">
+<h2>How it works</h2>
+<h3>From a folder to a running, boxed-in app</h3>
+<p class="lead">Every arrow is a check. If any check says no, the plug stops there and tells you why in plain words.</p>
+<div class="box"><pre id="pipe"></pre></div>
+</section>
+
+<section id="plug">
+<h2>What's inside a plug</h2>
+<h3>Four parts, one file</h3>
+<p class="lead">A plug is one file you can pass around. Open it up and there are four parts. The permissions list decides everything the app inside may touch.</p>
+<div class="grid">
+<div class="box"><pre>
+  hello.plug
+  |
+  +-- plug.json    <span class="mut">what it is, who made it,</span>
+  |                <span class="mut">what it's allowed to touch</span>
+  |
+  +-- build.json   <span class="mut">fingerprint of every file</span>
+  |
+  +-- app/         <span class="mut">the app itself (one page)</span>
+  |
+  +-- signature    <span class="mut">the author's seal over all</span>
+                   <span class="mut">of the above</span>
+</pre></div>
+<div class="box"><pre>
+  "permissions": {
+    "network": [<span class="pink">"api.example.com"</span>],
+    "storage": <span class="pink">"64KB"</span>,
+    "events":  [<span class="pink">"hello.ping"</span>]
+  }
+
+  <span class="mut">Not listed = not reachable.</span>
+  <span class="mut">No camera. No mic. No location.</span>
+  <span class="mut">No cookies. No peeking at the page.</span>
+</pre></div>
+</div>
+</section>
+
+<section id="layers">
+<h2>Layers</h2>
+<h3>Each layer is checked by the next</h3>
+<p class="lead">Before a plug (a signed one-file app) runs, it has to pass seven checks, one inside the other. Like an onion: fooling one layer isn't enough. All of them have to agree, in the same file, at the same time.</p>
+<div class="box"><pre>
+  +-------------------------------------------------------------+
+  | 7 WATCHDOG   keeps watching; misbehave and it pulls the plug |
+  |  +-------------------------------------------------------+  |
+  |  | 6 GATEWAY  internet only to declared hosts, never home |  |
+  |  |  +-------------------------------------------------+   |  |
+  |  |  | 5 WITNESS  two separate checkers must agree     |   |  |
+  |  |  |  +-------------------------------------------+  |   |  |
+  |  |  |  | 4 GATE   every request: yes or no + reason |  |   |  |
+  |  |  |  |  +-------------------------------------+   |  |   |  |
+  |  |  |  |  | 3 MOULD  the file has one true shape |   |  |   |  |
+  |  |  |  |  |  +-------------------------------+   |   |  |   |  |
+  |  |  |  |  |  | 2 KEY    the author's signature |   |   |  |   |  |
+  |  |  |  |  |  |  +-------------------------+    |   |   |  |   |  |
+  |  |  |  |  |  |  | 1 LOCK  file fingerprints |    |   |   |  |   |  |
+  |  |  |  |  |  |  |       <span class="pink">[ the app ]</span>       |    |   |   |  |   |  |
+</pre></div>
+</section>
+
+<section id="gate">
+<h2>The gate</h2>
+<h3>A yes/no circuit, live</h3>
+<p class="lead">The gate sits between a plug (a boxed-in app) and everything outside it. Every message the plug sends goes in. Exactly one answer comes out, with a reason, and it's written down. The report card is built only from that record.</p>
+<div class="grid">
+<div class="box"><pre id="circuit"></pre></div>
+<div class="box"><pre id="card"></pre></div>
+</div>
+</section>
+
+<section id="fasteners">
+<h2>Fastener rules</h2>
+<h3>Grips harder when pulled. Slides in, never back out.</h3>
+<p class="lead">Two extra safety rules, named after real fasteners. A <b>wall anchor</b> grips tighter the harder you pull: an app that keeps asking for things it can't have gets less and less. A <b>barbed fitting</b> only goes one way: permissions only shrink, versions only go up, and nobody else can take over an app's name.</p>
+<div class="grid">
+<div class="box"><pre>
+  WALL ANCHOR <span class="mut">(pull harder, grip tighter)</span>
+
+  refused requests:  0    1    2    3    4
+  allowance / min:  <span class="ok">30</span>   <span class="pink">15</span>    <span class="pink">7</span>    <span class="pink">3</span>    <span class="bad">1</span>
+                    ##### ###  ##   #    .
+
+  at 20 refusals: <span class="bad">plug pulled, every door shut</span>
+  behave well:    <span class="ok">nothing ever tightens</span>
+</pre></div>
+<div class="box"><pre>
+  BARBED FITTING <span class="mut">(one way only)</span>
+
+  permissions   wide  >>>--->  narrow    <span class="bad">&lt;-- x</span>
+  versions      1.2   >>>--->  1.3       <span class="bad">&lt;-- x</span>
+  plug name     yours >>>--->  yours     <span class="bad">&lt;-- x</span> <span class="mut">anyone else</span>
+
+  <span class="mut">narrowing is fine, widening is refused</span>
+  <span class="mut">upgrading is fine, rolling back is refused</span>
+</pre></div>
+</div>
+</section>
+
+<section id="fit">
+<h2>Fit check</h2>
+<h3>Drop anything in. Find out before you change a thing.</h3>
+<p class="lead">It reads your file or folder (never changes it) and says what fits, what needs a tweak, and why.</p>
+<div class="box"><pre id="fitout"><span class="mut">$</span> python tools/fit.py my-game/
+
+It looks like: a folder
+Start page: index.html
+
+<span class="pink">[fix]</span> saves data in the browser   <span class="mut">(index.html line 4)</span>
+       why: a plug runs boxed in, so browser storage is blocked
+       fix: use the socket's storage.set and add "storage": "1MB"
+<span class="pink">[fix]</span> talks to the internet directly   <span class="mut">(index.html line 5)</span>
+       why: direct network calls are blocked; they go through the gateway
+       fix: send net.fetch to the socket, list the host in permissions
+<span class="bad">[no] </span> sends the page somewhere else   <span class="mut">(index.html line 9)</span>
+       why: a plug that navigates away gets pulled by the watchdog
+       fix: show and hide sections instead of changing pages
+
+VERDICT: doesn't fit yet. Start with the [no] items.
+(Your original was only read, never changed.)<span class="cursor">_</span></pre></div>
+</section>
+
+<section id="status">
+<h2>Status</h2>
+<h3>Built, tested, attacked, fixed</h3>
+<p class="lead">Every phase ends working and tested, with a test that proves each check can fail. Each phase is attacked before it's called done.</p>
+<div class="box" style="padding:6px 8px">
+<table>
+<tr><th>#</th><th>Phase</th><th>State</th></tr>
+<tr><td>1</td><td>Manifest + validator</td><td class="done">done</td></tr>
+<tr><td>2</td><td>Packer: folder in, signed reproducible .plug out</td><td class="done">done</td></tr>
+<tr><td>3</td><td>Keys: Ed25519 sign + verify (RFC test vectors)</td><td class="done">done</td></tr>
+<tr><td>4</td><td>Socket: verify, box it in, gate every call</td><td class="done">done</td></tr>
+<tr><td>5</td><td>Same plug in every host, unchanged</td><td class="done">done</td></tr>
+<tr><td>6</td><td>Gateway, watchdog, report card</td><td class="done">done</td></tr>
+<tr><td>+</td><td>Fit checker, fastener rules</td><td class="done">done</td></tr>
+<tr><td>7</td><td>Work Zone dashboard: switches, links, themes</td><td class="done">done</td></tr>
+<tr><td>8</td><td>Adapters: AI tools, web APIs, WASM, components</td><td class="done">done</td></tr>
+<tr><td>+</td><td>Multi-file plugs, remix with family line</td><td class="done">done</td></tr>
+<tr><td>9</td><td>Plug shelf, desktop app, devices, docs for developers</td><td class="done">done</td></tr>
+</table>
+</div>
+
+<footer>Work Zone &middot; the Plug &middot; MIT licence</footer>
+</section>
+</main>
+<div id="dots" aria-hidden="true"></div>
+
+<script>
+// Fit each section to one screen: wrap its content, then shrink it only if it would not fit.
+(function () {
+  var inners = [].map.call(document.querySelectorAll('section'), function (sec) {
+    var box = document.createElement('div'); box.className = 'inner';
+    while (sec.firstChild) box.appendChild(sec.firstChild);
+    sec.appendChild(box); return box;
+  });
+  function fit() {
+    inners.forEach(function (box) {
+      var sec = box.parentNode, cs = getComputedStyle(sec);
+      var room = sec.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      box.style.zoom = 1;
+      var need = box.scrollHeight;
+      if (need > room) box.style.zoom = Math.max(0.5, room / need).toFixed(3);
+    });
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  setTimeout(fit, 400);
+  window.fitSections = fit;
+})();
+(function () {
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------------------------------------------------------------- hero: two halves, one fit
+  // The logo is split into two layers (every other column), each its own tone, stacked on top of
+  // each other. They glide in (GPU transforms, sub-pixel smooth), sit one column out of line and
+  // rattle red ("doesn't fit"), back off, then click into line and settle into one colour.
+  var logo = document.getElementById('logo'), fitline = document.getElementById('fitline');
+  var rows = logo.textContent.replace(/^\n/, '').replace(/\s+$/, '').split('\n');
+  function layer(odd) {
+    var el = document.createElement('span');
+    el.className = odd ? 'lb' : 'la';
+    el.textContent = rows.map(function (r) {
+      return r.split('').map(function (c, x) { return (x % 2 === 1) === odd ? c : ' '; }).join('');
+    }).join('\n');
+    return el;
+  }
+  var la = layer(false), lb = layer(true);
+  logo.textContent = '';
+  logo.appendChild(la); logo.appendChild(lb);
+  function say(t, cls) { fitline.textContent = t; fitline.className = cls || ''; }
+  function place(xa, xb) { la.style.transform = 'translateX(' + xa + 'ch)'; lb.style.transform = 'translateX(' + xb + 'ch)'; }
+  var timers = [];
+  var CALM = reduce ? 1.5 : 1;                 // motion turned off: same animation, 1.5x calmer
+  function at(ms, fn) { timers.push(setTimeout(fn, ms * CALM)); }
+  function finish() { la.style.willChange = lb.style.willChange = 'auto'; logo.className = 'merged'; place(0, 0); say('fits. sealed. one piece.', 'ok'); }
+  function play() {
+    timers.forEach(clearTimeout); timers = [];
+    la.style.willChange = lb.style.willChange = 'transform, opacity';
+    logo.className = 'still'; place(-16, 16); la.style.opacity = lb.style.opacity = '0';
+    say('two halves. will they fit?', 'mut');
+    void logo.offsetWidth;                       // start from the edges, then let the transitions run
+    logo.className = '';
+    at(30, function () { la.style.opacity = lb.style.opacity = '1'; place(0, 1); });
+    at(1150, function () { logo.className = 'jam'; say("x  doesn't fit: refused", 'bad'); });
+    at(1750, function () { logo.className = ''; place(-3, 4); say('checking the shape...', 'mut'); });
+    at(2500, function () { place(0, 0); });
+    at(3250, finish);
+  }
+  // On a loop: play, fall into place, then rest ~8 seconds on the finished logo so you can see it, then again.
+  // Only while you can see it: it waits when the tab is hidden or you've scrolled away (saves battery).
+  var HOLD = 8000, SHOW = 3250 * CALM, loopTimer = null, onScreen = true;
+  function cycle() {
+    clearTimeout(loopTimer);
+    if (document.hidden || !onScreen) { loopTimer = null; return; }     // resumes when you come back
+    play();
+    loopTimer = setTimeout(cycle, SHOW + HOLD);
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !loopTimer) cycle(); });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      onScreen = es[0].isIntersecting;
+      if (onScreen && !loopTimer) cycle();
+    }).observe(logo);
+  }
+  cycle();
+  logo.title = 'play it now';
+  logo.onclick = cycle;
+
+  var nav = document.querySelector('nav');
+  function navh() { document.documentElement.style.setProperty('--navh', nav.offsetHeight + 'px'); if (window.fitSections) fitSections(); }
+  navh(); window.addEventListener('resize', navh);
+
+  // ---------------------------------------------------------------- side dots: one per screen
+  var dots = document.getElementById('dots');
+  var secs = Array.prototype.slice.call(document.querySelectorAll('main > section'));
+  secs.forEach(function (sec) {
+    var a = document.createElement('a'); a.href = '#' + sec.id; a.tabIndex = -1; dots.appendChild(a);
+  });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) Array.prototype.forEach.call(dots.children, function (d, k) { d.classList.toggle('on', secs[k] === e.target); });
+      });
+    }, { rootMargin: '-50% 0px -50% 0px', threshold: 0 });
+    secs.forEach(function (sec) { io.observe(sec); });
+  }
+
+  // ---------------------------------------------------------------- pipeline
+  var stages = ['folder', 'FIT', 'PACK', 'SIGN', '.plug', 'VERIFY', 'ASK YOU', 'BOX', 'GATE', 'running'];
+  var notes  = ['your files', 'will it fit?', 'fingerprint', 'your key', 'one file', '7 layers', 'trust + perms', 'sandbox', 'yes / no', 'boxed in'];
+  var pipe = document.getElementById('pipe'), step = 0;
+  function drawPipe() {
+    var top = '', mid = '', bot = '';
+    stages.forEach(function (s, i) {
+      var w = Math.max(s.length, notes[i].length) + 2;
+      var on = i === step;
+      var pad = function (t) { var l = Math.floor((w - t.length) / 2); return ' '.repeat(l) + t + ' '.repeat(w - t.length - l); };
+      top += (on ? '<span class="pink">' : '') + '+' + '-'.repeat(w) + '+' + (on ? '</span>' : '') + (i < stages.length - 1 ? '   ' : '');
+      mid += (on ? '<span class="pink">' : '') + '|' + pad(s) + '|' + (on ? '</span>' : '') + (i < stages.length - 1 ? (i === step ? '<span class="pink">==></span>' : '-->') : '');
+      bot += (on ? '<span class="pink">' : '') + '+' + '-'.repeat(w) + '+' + (on ? '</span>' : '') + (i < stages.length - 1 ? '   ' : '');
+    });
+    var under = '';
+    stages.forEach(function (s, i) {
+      var w = Math.max(s.length, notes[i].length) + 2;
+      var t = notes[i], l = Math.floor((w + 2 - t.length) / 2);
+      under += '<span class="mut">' + ' '.repeat(l) + t + ' '.repeat(w + 2 - t.length - l) + '</span>' + (i < stages.length - 1 ? '   ' : '');
+    });
+    // Two rows of five so it fits a screen
+    pipe.innerHTML = [top, mid, bot, under].join('\n');
+  }
+  // Split into two lines of 5 for readability on narrow screens
+  var all = stages.slice(), allN = notes.slice();
+  function drawSplit() {
+    var out = [];
+    [[0, 5], [5, 10]].forEach(function (r, row) {
+      stages = all.slice(r[0], r[1]); notes = allN.slice(r[0], r[1]);
+      var real = step; step = real - r[0];
+      drawPipe(); out.push(pipe.innerHTML);
+      step = real;
+      if (row === 0) out.push('<span class="mut">' + ' '.repeat(62) + '|\n  +' + '-'.repeat(59) + '+\n  |</span>');
+    });
+    stages = all; notes = allN;
+    pipe.innerHTML = out.join('\n');
+  }
+  drawSplit();
+  if (!reduce) setInterval(function () { step = (step + 1) % all.length; drawSplit(); }, 900);
+
+  // ---------------------------------------------------------------- gate circuit
+  var msgs = [
+    ['plug.ready', true, 'ready'],
+    ['event.publish hello.ping', true, 'declared event'],
+    ['net.fetch api.example.com', true, 'declared host'],
+    ['net.fetch evil.example', false, 'not declared'],
+    ['storage.set score', true, 'own storage, inside 64KB'],
+    ['net.fetch 192.168.1.1', false, 'your home network is off limits'],
+    ['identity.get', false, 'no identity permission'],
+    ['permissions.grant *', false, 'a plug cannot widen itself'],
+    ['event.publish wallet.send', false, 'not declared'],
+    ['net.fetch 127.0.0.1.nip.io', false, 'an IP dressed up as a name']
+  ];
+  var circuit = document.getElementById('circuit'), card = document.getElementById('card');
+  var lines = [], i = 0, yes = 0, no = 0, hosts = {};
+  function pad(s, n) { s = String(s); return s.length >= n ? s.slice(0, n) : s + ' '.repeat(n - s.length); }
+  function tick() {
+    var m = msgs[i % msgs.length]; i++;
+    m[1] ? yes++ : no++;
+    if (m[1] && /^net\.fetch/.test(m[0])) hosts[m[0].split(' ')[1]] = (hosts[m[0].split(' ')[1]] || 0) + 1;
+    var gate =
+      '  message in                      GATE\n' +
+      '  ' + pad(m[0], 30) + ' --> [ ? ] --> ' + (m[1] ? '<span class="ok">YES</span>' : '<span class="bad">NO </span>') + '\n' +
+      '  <span class="mut">' + pad('', 34) + 'reason: ' + m[2] + '</span>\n\n' +
+      '  <span class="mut">log</span>\n';
+    lines.unshift((m[1] ? '<span class="ok">  allowed </span>' : '<span class="bad">  refused </span>') + pad(m[0], 28) + ' <span class="mut">' + m[2] + '</span>');
+    lines = lines.slice(0, 7);
+    circuit.innerHTML = gate + lines.join('\n');
+    var grade = no ? '<span class="pink">TRIED THINGS</span>' : '<span class="ok">CLEAN</span>';
+    card.innerHTML =
+      '  REPORT CARD           hello.plug\n' +
+      '  ---------------------------------\n' +
+      '  asked for   internet: api.example.com\n' +
+      '              storage: 64KB\n' +
+      '              events: hello.ping\n\n' +
+      '  contacted   ' + (Object.keys(hosts).map(function (h) { return h + ' x' + hosts[h]; }).join(', ') || 'nothing') + '\n' +
+      '  allowed     <span class="ok">' + yes + '</span>\n' +
+      '  blocked     <span class="bad">' + no + '</span>\n\n' +
+      '  grade       ' + grade + '\n' +
+      '  <span class="mut">' + (no ? 'did its job, tried ' + no + ' thing(s) it was\n  not allowed to. all were blocked.' : 'only did what it said it would.') + '</span>';
+  }
+  tick();
+  if (!reduce) setInterval(tick, 1400);
+})();
+</script>
+</body>
+</html>

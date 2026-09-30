@@ -1,0 +1,91 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Space Live</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060d18;color:#e6f3ff;font:14px/1.45 system-ui,sans-serif}
+.wrap{width:min(760px,94vw)}
+h1{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#7dd3fc;margin:0 0 10px;display:flex;gap:10px;align-items:center}
+h1 i{width:8px;height:8px;border-radius:50%;background:#86efac;box-shadow:0 0 10px #86efac;animation:pulse 2s infinite}
+h1 i.off{background:#fca5a5;box-shadow:none;animation:none}
+@keyframes pulse{50%{opacity:.35}}
+canvas{width:100%;display:block;border-radius:14px;border:1px solid rgba(125,211,252,.28);background:radial-gradient(ellipse at 50% 40%,#10233b,#060d18)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.stats div{border:1px solid rgba(125,211,252,.22);border-radius:10px;padding:8px 10px;background:rgba(22,44,72,.45)}
+.stats b{display:block;font:600 16px ui-monospace,Consolas,monospace;color:#e6f3ff}
+.stats span{font-size:11px;color:#8fb3cf;letter-spacing:.08em;text-transform:uppercase}
+.note{margin-top:8px;font-size:12px;color:#8fb3cf}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){h1 i{animation:none}}
+</style>
+<div class="wrap">
+  <h1><i id="live"></i>International Space Station, live</h1>
+  <canvas id="map" width="760" height="380" aria-label="Map of the space station's position"></canvas>
+  <div class="stats">
+    <div><span>latitude</span><b id="lat">-</b></div>
+    <div><span>longitude</span><b id="lon">-</b></div>
+    <div><span>altitude</span><b id="alt">-</b></div>
+    <div><span>speed</span><b id="vel">-</b></div>
+  </div>
+  <div class="note" id="note">Asking the socket for the station's position...</div>
+</div>
+<script>
+// The plug can't reach the internet itself. It asks the socket's gateway, which only allows the one
+// address in plug.json, and writes every request on the report card.
+var API = 'https://api.wheretheiss.at/v1/satellites/25544';
+var trail = [], cv = document.getElementById('map'), g = cv.getContext('2d');
+function ask(msg) {
+  return new Promise(function (resolve) {
+    var id = Math.random().toString(36).slice(2);
+    var timer = setTimeout(function () { removeEventListener('message', on); resolve({ ok: true, reply: { status: 0 } }); }, 10000);   // never pile up
+    function on(e) {
+      if (e.data && e.data.topic === 'reply' && e.data.id === id) { clearTimeout(timer); removeEventListener('message', on); resolve(e.data); }
+    }
+    addEventListener('message', on);
+    parent.postMessage(Object.assign({ id: id }, msg), '*');
+  });
+}
+function xy(lat, lon) { return [(lon + 180) / 360 * cv.width, (90 - lat) / 180 * cv.height]; }
+function draw() {
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.strokeStyle = 'rgba(125,211,252,.12)'; g.lineWidth = 1;
+  for (var lo = -180; lo <= 180; lo += 30) { var a = xy(0, lo); g.beginPath(); g.moveTo(a[0], 0); g.lineTo(a[0], cv.height); g.stroke(); }
+  for (var la = -90; la <= 90; la += 30) { var b = xy(la, 0); g.beginPath(); g.moveTo(0, b[1]); g.lineTo(cv.width, b[1]); g.stroke(); }
+  g.strokeStyle = 'rgba(125,211,252,.35)'; var eq = xy(0, 0); g.beginPath(); g.moveTo(0, eq[1]); g.lineTo(cv.width, eq[1]); g.stroke();
+  g.strokeStyle = 'rgba(134,239,172,.55)'; g.lineWidth = 2; g.beginPath();
+  trail.forEach(function (p, i) {
+    var q = xy(p[0], p[1]), prev = i && xy(trail[i - 1][0], trail[i - 1][1]);
+    if (!i || Math.abs(q[0] - prev[0]) > cv.width / 2) g.moveTo(q[0], q[1]); else g.lineTo(q[0], q[1]);
+  });
+  g.stroke();
+  if (trail.length) {
+    var n = xy(trail[trail.length - 1][0], trail[trail.length - 1][1]);
+    g.fillStyle = 'rgba(125,211,252,.25)'; g.beginPath(); g.arc(n[0], n[1], 14, 0, 7); g.fill();
+    g.fillStyle = '#7dd3fc'; g.beginPath(); g.arc(n[0], n[1], 5, 0, 7); g.fill();
+    g.fillStyle = '#e6f3ff'; g.font = '12px ui-monospace,Consolas,monospace'; g.fillText('ISS', n[0] + 10, n[1] - 10);
+  }
+}
+async function tick() {
+  if (document.hidden) return;                          // nothing while you can't see it
+  var r = await ask({ topic: 'net.fetch', url: API, method: 'GET' });
+  var live = document.getElementById('live'), note = document.getElementById('note');
+  if (!r.ok || !r.reply || r.reply.status !== 200) {
+    live.classList.add('off');
+    note.textContent = r.ok ? 'The space station service did not answer; trying again shortly.' : 'The internet power is switched off (' + (r.reason || 'refused') + '). Nothing is fetched.';
+    return;
+  }
+  var d;
+  try { d = JSON.parse(r.reply.body); } catch (e) { note.textContent = 'An odd reply came back; trying again shortly.'; return; }
+  live.classList.remove('off');
+  trail.push([d.latitude, d.longitude]); if (trail.length > 360) trail.shift();
+  document.getElementById('lat').textContent = d.latitude.toFixed(2) + '°';
+  document.getElementById('lon').textContent = d.longitude.toFixed(2) + '°';
+  document.getElementById('alt').textContent = Math.round(d.altitude) + ' km';
+  document.getElementById('vel').textContent = Math.round(d.velocity).toLocaleString() + ' km/h';
+  note.textContent = 'Updated ' + new Date(d.timestamp * 1000).toLocaleTimeString() + ' · ' + d.visibility + ' · through the socket\'s gateway, logged on the report card';
+  draw();
+}
+draw();
+parent.postMessage({ topic: 'plug.ready' }, '*');
+tick();
+setInterval(tick, 5000);                                // 12 a minute: well inside the gateway's limit
+</script>

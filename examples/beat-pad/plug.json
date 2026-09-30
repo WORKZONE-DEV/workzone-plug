@@ -1,0 +1,16 @@
+{
+  "plug": "0",
+  "id": "zone.work.beat-pad",
+  "name": "Beat Pad",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "events": ["beat.step"],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A 16-step drum machine. Tap squares to make a beat. Press edit code and change the numbers marked CHANGE ME to learn how it works."
+}

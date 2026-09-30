@@ -1,0 +1,23 @@
+{
+  "plug": "0",
+  "id": "zone.work.gallery",
+  "name": "Gallery",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "events": [
+      "gallery.next",
+      "clock.tick"
+    ],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A multi-file plug: its own page, style sheet, script and image. Link a ticker to it and it flips by itself."
+}

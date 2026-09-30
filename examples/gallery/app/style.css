@@ -1,0 +1,4 @@
+body{margin:0;display:grid;place-items:center;height:100vh;background:#13101c;color:#ece8ff;font:600 16px system-ui,sans-serif}
+.card{text-align:center}
+.card img{width:120px;height:auto}
+b{color:#ff6fae}

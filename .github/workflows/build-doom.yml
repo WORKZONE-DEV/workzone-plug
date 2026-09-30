@@ -1,0 +1,68 @@
+# Builds the Doom plug's engine in the cloud, so nobody's own computer has to install a compiler.
+#   engine:    doomgeneric (GPL-2.0) compiled to WebAssembly with Emscripten, as ONE file (no downloads at runtime)
+#   game data: Freedoom Phase 1 (BSD-3-Clause), a complete free replacement for the original game files
+# Run it from the Actions tab ("Run workflow"). The result is a download called doom-plug-files.
+name: build-doom
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOOMGENERIC_COMMIT: dcb7a8dbc7a16ce3dda29382ac9aae9d77d21284   # the exact engine the shipped plug was built from
+      FREEDOOM_VERSION: "0.13.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.61
+
+      - name: Get the engine (doomgeneric, GPL-2.0)
+        run: |
+          git clone https://github.com/ozkl/doomgeneric.git dg
+          git -C dg checkout --quiet "$DOOMGENERIC_COMMIT"
+          git -C dg log -1 --format='doomgeneric %H' > engine-version.txt
+          cat engine-version.txt
+
+      - name: Build the engine to WebAssembly
+        run: |
+          cd dg/doomgeneric
+          cp "$GITHUB_WORKSPACE/examples/doom/build/doomgeneric_plug.c" .
+          # every engine file except the other platforms' front ends (SDL, X11, Windows, Allegro...)
+          SRC=$(ls *.c | grep -vE '^(doomgeneric_.*|i_sdl.*|i_allegro.*)\.c$'; echo doomgeneric_plug.c)
+          echo "$SRC" | tr '\n' ' '
+          emcc -O2 -DNORMALUNIX -DLINUX -D_DEFAULT_SOURCE $SRC -o doom.js \
+            -sSINGLE_FILE=1 -sINVOKE_RUN=0 -sFORCE_FILESYSTEM=1 -sALLOW_MEMORY_GROWTH=1 \
+            -sEXPORTED_RUNTIME_METHODS=callMain,FS -sEXPORTED_FUNCTIONS=_main,_plug_key \
+            -sENVIRONMENT=web
+          ls -l doom.js
+
+      - name: Get the game data (Freedoom Phase 1, BSD-3-Clause)
+        run: |
+          curl -fsSL -o freedoom.zip "https://github.com/freedoom/freedoom/releases/download/v${FREEDOOM_VERSION}/freedoom-${FREEDOOM_VERSION}.zip"
+          unzip -q freedoom.zip
+          ls -l freedoom-${FREEDOOM_VERSION}
+
+      - name: Collect the files
+        run: |
+          mkdir out
+          cp dg/doomgeneric/doom.js out/
+          cp freedoom-${FREEDOOM_VERSION}/freedoom1.wad out/
+          cp freedoom-${FREEDOOM_VERSION}/COPYING.txt out/FREEDOOM-COPYING.txt
+          cp dg/LICENSE out/DOOMGENERIC-LICENSE.txt 2>/dev/null || cp dg/COPYING* out/DOOMGENERIC-LICENSE.txt
+          cp engine-version.txt out/
+          echo "freedoom ${FREEDOOM_VERSION}" >> out/engine-version.txt
+          (cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doom-plug-files
+          path: out/
+          retention-days: 7

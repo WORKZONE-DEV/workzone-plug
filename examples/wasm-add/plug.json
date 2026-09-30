@@ -1,0 +1,22 @@
+{
+  "plug": "0",
+  "id": "zone.work.wasm-add",
+  "name": "WebAssembly Add",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": [
+    "panel"
+  ],
+  "hosts": [
+    "any"
+  ],
+  "permissions": {
+    "ui": "panel",
+    "events": [
+      "wasm.result"
+    ]
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Runs a tiny WebAssembly module (compiled code, the kind Rust, C or C++ produce) inside a plug."
+}

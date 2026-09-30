@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Doom (Freedoom)</title>
+<style>
+html,body{margin:0;height:100%;background:#000;color:#ddd;font:13px/1.4 ui-monospace,Consolas,monospace;overflow:hidden}
+#wrap{position:absolute;inset:0;display:grid;place-items:center}
+canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;outline:none;background:#000}
+#start{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.72);text-align:center;cursor:pointer}
+#start b{display:block;font-size:22px;letter-spacing:.2em;color:#ff5a3c;margin-bottom:8px}
+#start small{color:#999}
+#pad{position:absolute;inset:auto 0 0 0;display:none;justify-content:space-between;padding:12px;pointer-events:none}
+#pad .grp{display:grid;grid-template-columns:repeat(3,52px);gap:6px;pointer-events:auto}
+#pad button{height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font:600 12px ui-monospace,monospace;touch-action:none}
+@media (pointer:coarse){#pad{display:flex}}
+</style>
+<div id="wrap"><canvas id="screen" width="640" height="400" tabindex="0" aria-label="Doom screen"></canvas></div>
+<div id="start" role="button" tabindex="0"><div><b>DOOM</b>click or tap to start<br><small>arrows move &middot; ctrl fire &middot; space use/open &middot; enter select &middot; esc menu &middot; 1-7 weapons</small></div></div>
+<div id="pad" aria-hidden="true">
+  <div class="grp"><span></span><button data-k="up">&#9650;</button><span></span><button data-k="left">&#9664;</button><button data-k="down">&#9660;</button><button data-k="right">&#9654;</button></div>
+  <div class="grp"><button data-k="esc">menu</button><button data-k="enter">ok</button><button data-k="y">yes</button><button data-k="use">use</button><button data-k="fire">fire</button><button data-k="tab">map</button></div>
+</div>
+<script>
+// Doom's own key codes (doomkeys.h). The engine never sees your keyboard directly: only these codes.
+var DK = { up: 0xad, down: 0xaf, left: 0xac, right: 0xae, fire: 0xa3, use: 0xa2, esc: 27, enter: 13, tab: 9,
+           strafeL: 0xa0, strafeR: 0xa1, run: 0x80 + 0x36, y: 121, n: 110 };
+var FROM_KEY = { ArrowUp: DK.up, ArrowDown: DK.down, ArrowLeft: DK.left, ArrowRight: DK.right, Control: DK.fire,
+                 ' ': DK.use, Escape: DK.esc, Enter: DK.enter, Tab: DK.tab, Shift: DK.run, ',': DK.strafeL, '.': DK.strafeR,
+                 w: DK.up, s: DK.down, a: DK.strafeL, d: DK.strafeR };
+var canvas = document.getElementById('screen'), ctx = canvas.getContext('2d'), img = null, px = null, ready = false;
+
+var Module = {
+  noInitialRun: true,
+  canvas: canvas,
+  print: function () {}, printErr: function () {},
+  onTitle: function (t) { document.title = t; },
+  // Each frame arrives as ARGB pixels; the canvas wants RGBA.
+  onFrame: function (src, w, h) {
+    if (!img || img.width !== w) { canvas.width = w; canvas.height = h; img = ctx.createImageData(w, h); px = new Uint32Array(img.data.buffer); }
+    for (var i = 0; i < src.length; i++) { var p = src[i]; px[i] = 0xff000000 | (p & 0x00ff00) | ((p >> 16) & 0xff) | ((p & 0xff) << 16); }
+    ctx.putImageData(img, 0, 0);
+  },
+  onRuntimeInitialized: function () { ready = true; if (pending) start(); }
+};
+
+function key(pressed, code) { if (ready && code) Module._plug_key(pressed ? 1 : 0, code); }
+addEventListener('keydown', function (e) {
+  var c = FROM_KEY[e.key] || FROM_KEY[e.key.toLowerCase()] || (/^[0-9a-z]$/i.test(e.key) ? e.key.toLowerCase().charCodeAt(0) : 0);
+  if (c) { key(true, c); e.preventDefault(); }
+});
+addEventListener('keyup', function (e) {
+  var c = FROM_KEY[e.key] || FROM_KEY[e.key.toLowerCase()] || (/^[0-9a-z]$/i.test(e.key) ? e.key.toLowerCase().charCodeAt(0) : 0);
+  if (c) { key(false, c); e.preventDefault(); }
+});
+Array.prototype.forEach.call(document.querySelectorAll('#pad button'), function (b) {
+  var c = DK[b.getAttribute('data-k')];
+  b.addEventListener('pointerdown', function (e) { e.preventDefault(); key(true, c); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) { b.addEventListener(t, function () { key(false, c); }); });
+});
+
+// Start on a click/tap. The game levels come from the sealed plug itself (plugFile), never the internet.
+var started = false, pending = false;
+function start() {
+  if (started) return;
+  if (!ready) { pending = true; document.querySelector('#start div').firstChild.nextSibling.textContent = 'loading...'; return; }
+  var wad = window.plugFile && plugFile('freedoom1.wad');
+  if (!wad) { document.querySelector('#start div').textContent = 'The game data is missing from this plug.'; return; }
+  started = true;
+  Module.FS.writeFile('/freedoom1.wad', wad);
+  document.getElementById('start').remove();
+  canvas.focus();
+  Module.callMain(['-iwad', '/freedoom1.wad']);
+}
+document.getElementById('start').addEventListener('click', start);
+document.getElementById('start').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') start(); });
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>
+<script src="doom.js"></script>

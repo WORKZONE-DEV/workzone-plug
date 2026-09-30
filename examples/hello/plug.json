@@ -1,0 +1,18 @@
+{
+  "plug": "0",
+  "id": "zone.work.hello",
+  "name": "Hello Plug",
+  "version": "0.1.0",
+  "kind": "panel",
+  "entry": "index.html",
+  "views": ["panel", "ascii"],
+  "hosts": ["any"],
+  "permissions": {
+    "identity": "none",
+    "storage": "64KB",
+    "events": ["hello.ping"],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "The smallest possible plug: shows a greeting and answers hello.ping. The author_key is a placeholder until the packer signs it."
+}

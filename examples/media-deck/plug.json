@@ -1,0 +1,15 @@
+{
+  "plug": "0",
+  "id": "zone.work.media-deck",
+  "name": "Media Deck",
+  "version": "0.1.1",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Music, a classic cinema advert and Apollo 11, all sealed inside the plug with zero powers. Every file is public domain or free-licence, credited on screen."
+}

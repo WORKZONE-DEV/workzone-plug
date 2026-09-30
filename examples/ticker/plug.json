@@ -1,0 +1,16 @@
+{
+  "plug": "0",
+  "id": "zone.work.ticker",
+  "name": "Ticker",
+  "version": "0.1.0",
+  "kind": "tool",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "events": ["clock.tick"],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Sends clock.tick every 2 seconds. Link it to another brick that listens for clock.tick."
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Media Deck</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1726;color:#e6f3ff;font:14px/1.45 system-ui,sans-serif}
+.deck{width:min(760px,94vw)}
+h1{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#7dd3fc;margin:0 0 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{background:rgba(40,74,112,.45);color:#e6f3ff;border:1px solid rgba(125,211,252,.28);border-radius:999px;padding:6px 14px;cursor:pointer;font:600 12px ui-monospace,Consolas,monospace}
+.tabs button.on{background:#7dd3fc;color:#06121f}
+.stage{border:1px solid rgba(125,211,252,.28);border-radius:14px;background:rgba(8,20,36,.72);padding:12px}
+video,audio{width:100%;display:block;border-radius:10px;background:#000}
+audio{background:transparent;margin-top:8px}
+.art{height:160px;border-radius:10px;display:grid;place-items:center;font:700 22px ui-monospace,Consolas,monospace;letter-spacing:.2em;color:#06121f}
+.credit{margin-top:10px;font-size:12px;color:#8fb3cf}
+.credit b{color:#e6f3ff}
+</style>
+<div class="deck">
+  <h1>Media Deck</h1>
+  <div class="tabs" id="tabs"></div>
+  <div class="stage" id="stage"></div>
+  <div class="credit" id="credit"></div>
+</div>
+<script>
+// Every file lives inside the sealed plug and is read with plugFile(): nothing is streamed from the internet.
+var ITEMS = [
+  { tab: 'Jazz 1921', file: 'media/jazz-me-blues-1921.ogg', type: 'audio/ogg', art: 'linear-gradient(135deg,#fde68a,#f59e0b)',
+    title: '"Jazz Me Blues"', credit: 'Original Dixieland Jass Band (recorded 1921), written by Tom Delaney. Public domain. Source: Wikimedia Commons.' },
+  { tab: 'Reggae', file: 'media/dark-red-wine.mp3', type: 'audio/mpeg', art: 'linear-gradient(135deg,#16a34a,#facc15 55%,#dc2626)',
+    title: '"Dark Red Wine"', credit: 'Jason Shaw, audionautix.com. Licensed under Creative Commons Attribution 4.0 (CC BY 4.0).' },
+  { tab: 'Cinema advert 1957', file: 'media/lets-all-go-to-the-lobby-1957.webm', type: 'video/webm',
+    title: '"Let\'s All Go to the Lobby"', credit: 'Filmack Studios / Dave Fleischer (1957). Public domain (copyright not renewed). US National Film Registry. Source: Wikimedia Commons.' },
+  { tab: 'Apollo 11', file: 'media/apollo-11-first-steps.webm', type: 'video/webm',
+    title: 'Apollo 11: first steps on the Moon (1969)', credit: 'NASA. Public domain (created by NASA). Source: Wikimedia Commons.' }
+];
+var urls = {}, tabs = document.getElementById('tabs'), stage = document.getElementById('stage'), credit = document.getElementById('credit');
+function url(it) {
+  if (!urls[it.file]) {
+    var bytes = window.plugFile && plugFile(it.file);
+    if (!bytes) return null;
+    urls[it.file] = URL.createObjectURL(new Blob([bytes], { type: it.type }));   // local only, played from memory
+  }
+  return urls[it.file];
+}
+function show(i) {
+  var it = ITEMS[i];
+  Array.prototype.forEach.call(tabs.children, function (b, k) { b.classList.toggle('on', k === i); });
+  stage.textContent = '';
+  var u = url(it);
+  if (!u) { stage.textContent = 'This file is missing from the plug.'; return; }
+  if (/^video/.test(it.type)) {
+    var v = document.createElement('video'); v.controls = true; v.src = u; v.playsInline = true; stage.appendChild(v);
+  } else {
+    var a = document.createElement('div'); a.className = 'art'; a.style.background = it.art; a.textContent = it.tab.toUpperCase(); stage.appendChild(a);
+    var au = document.createElement('audio'); au.controls = true; au.src = u; stage.appendChild(au);
+  }
+  credit.textContent = '';
+  var b = document.createElement('b'); b.textContent = it.title + '  '; credit.appendChild(b);
+  credit.appendChild(document.createTextNode(it.credit));
+}
+ITEMS.forEach(function (it, i) {
+  var b = document.createElement('button'); b.textContent = it.tab; b.onclick = function () { show(i); }; tabs.appendChild(b);
+});
+show(0);
+addEventListener('pagehide', function () { Object.keys(urls).forEach(function (k) { URL.revokeObjectURL(urls[k]); }); });
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

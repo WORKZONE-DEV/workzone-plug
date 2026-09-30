@@ -1,0 +1,16 @@
+{
+  "plug": "0",
+  "id": "zone.work.space-live",
+  "name": "Space Live",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "network": ["api.wheretheiss.at"],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "Where the International Space Station is right now. One power: the internet, to one address only (api.wheretheiss.at). Untick it and it stops, politely."
+}

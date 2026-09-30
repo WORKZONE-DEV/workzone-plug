@@ -1,0 +1,27 @@
+{
+  "profile": "0",
+  "brand": "Example",
+  "model": "Smart TV (example profile)",
+  "kind": "tv",
+  "match": {
+    "manufacturer": "Example Electronics",
+    "model_contains": "ExampleTV"
+  },
+  "powers": {
+    "microphone": {
+      "can_switch_off_from_work_zone": false,
+      "how": "On the TV: Settings > General > Voice > turn off voice recognition."
+    },
+    "show pop-ups": {
+      "can_switch_off_from_work_zone": false,
+      "how": "On the TV: Settings > Support > Terms & Privacy > turn off interest-based ads."
+    },
+    "let phones launch apps (casting)": {
+      "can_switch_off_from_work_zone": false,
+      "how": "On the TV: Settings > Connection > turn off screen sharing."
+    }
+  },
+  "tested_by": "your name or handle",
+  "tested_on": "2026-01-01",
+  "notes": "An example of the format. Real profiles say exactly what was tested, on which model and software version."
+}

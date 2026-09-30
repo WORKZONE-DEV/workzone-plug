@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plug</title>
+<!-- Host #3: the desktop host. One plug fills its own app window (python tools/wz.py run FILE.plug).
+     Same socket, same checks, same box as every other host. -->
+<style>
+:root{--bg:#1a1a1a;--panel:#1f1f1f;--ink:#e8e8e8;--muted:#9e9e9e;--line:rgba(232,232,232,.08);--pink:#f5ccd9;--ok:#bfe3cf;--bad:#f2a7b8}
+@media (prefers-color-scheme:light){:root{--bg:#f3eff1;--panel:#fbf8f9;--ink:#2e3440;--muted:#5c6b84;--line:#e4d8dc;--pink:#6e7f9a;--ok:#3f7a5a;--bad:#b5566c}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{flex:none;height:34px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel);font:12px ui-monospace,Consolas,monospace;color:var(--muted)}
+header b{color:var(--pink);letter-spacing:.14em;font-weight:600}
+header .grow{flex:1}
+button,label.btn{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:2px 9px;cursor:pointer}
+button:hover,label.btn:hover{border-color:var(--pink)}
+#slot{flex:1;min-height:0;position:relative;display:grid;place-items:center;color:var(--muted);text-align:center;padding:0}
+#slot:has(iframe){display:block}
+#slot iframe{display:block}
+#log{flex:none;max-height:0;overflow:auto;font:11.5px/1.5 ui-monospace,Consolas,monospace;background:var(--panel);border-top:1px solid var(--line);padding:0 12px;transition:max-height .25s ease}
+body.showlog #log{max-height:30vh;padding:8px 12px}
+.allowed{color:var(--ok)}.refused,.killed{color:var(--bad)}
+.hk-ask{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.hk-ask::backdrop{background:rgba(0,0,0,.55)}
+.hk-text{white-space:pre-line;font:13px/1.5 ui-monospace,Consolas,monospace}.hk-row{display:flex;gap:8px;justify-content:flex-end}
+.hk-yes{background:var(--pink);color:var(--bg);border-color:var(--pink);font-weight:600}
+@media (prefers-reduced-motion:reduce){#log{transition:none}}
+</style>
+</head>
+<body>
+<header><b>PLUG</b><span id="name">no plug yet</span><span class="grow"></span><span id="fp"></span>
+ <label class="btn">open .plug <input id="file" type="file" accept=".plug" hidden></label>
+ <button id="logBtn" aria-pressed="false">log</button></header>
+<div id="slot">Drop a .plug file here, or press "open .plug".<br>It is checked, you're asked, then it runs in its own locked box.</div>
+<div id="log" aria-live="polite"></div>
+<script src="../socket/plug-socket.js"></script>
+<script src="../socket/host-kit.js"></script>
+<script>
+(function () {
+  'use strict';
+  var TOKEN = '__WORKZONE_TOKEN__';
+  function $(id) { return document.getElementById(id); }
+  $('logBtn').onclick = function () {
+    var on = document.body.classList.toggle('showlog');
+    this.setAttribute('aria-pressed', String(on));
+  };
+  async function api(path, body) {
+    var r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-WorkZone-Token': TOKEN }, body: JSON.stringify(body || {}) });
+    return r.json();
+  }
+  function b64bytes(b64) { var s = atob(b64), u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+  async function start() {
+    var status = {};
+    try { status = await api('/api/status'); } catch (e) { /* opened without the helper: file picker still works */ }
+    var host = HostKit.attach({
+      hostName: 'Desktop', slot: $('slot'), log: $('log'), fileInput: $('file'),
+      trustedKeys: status.public_key ? [status.public_key] : [],      // your own plugs; anyone else asks first
+      onMount: function (h) {
+        document.title = h.manifest.name;
+        $('name').textContent = h.manifest.name + ' ' + h.manifest.version;
+      }
+    });
+    // Handed a plug by "wz run"? Collect it once (the helper forgets it straight after).
+    var m = /^#h=([a-f0-9]{16,64})$/.exec(location.hash);
+    if (m) {
+      history.replaceState(null, '', location.pathname);
+      var r = await api('/api/handoff', { id: m[1] });
+      if (r.b64) {
+        var bytes = b64bytes(r.b64);
+        $('fp').textContent = (await HostKit.fingerprint(bytes)).slice(0, 12);
+        host.loadBytes(bytes);
+      } else {
+        $('slot').textContent = r.error || 'That plug was already opened. Run it again from the terminal.';
+      }
+    }
+  }
+  start();
+})();
+</script>
+</body>
+</html>

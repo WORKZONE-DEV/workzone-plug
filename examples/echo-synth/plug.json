@@ -1,0 +1,16 @@
+{
+  "plug": "0",
+  "id": "zone.work.echo-synth",
+  "name": "Echo Synth",
+  "version": "0.1.0",
+  "kind": "widget",
+  "entry": "index.html",
+  "views": ["panel"],
+  "hosts": ["any"],
+  "permissions": {
+    "events": ["beat.step"],
+    "ui": "panel"
+  },
+  "author_key": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "description": "A little keyboard with an echo effect. Play it with the keys A to K. Link it to Beat Pad and it plays along."
+}

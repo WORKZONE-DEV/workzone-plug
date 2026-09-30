@@ -1,0 +1,96 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Music Player</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#15131c;color:#ece8ff;font:14px/1.45 system-ui,sans-serif}
+.card{width:min(460px,92vw)}
+h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#7dd3fc;margin:0 0 12px}
+#drop{border:2px dashed #3b3556;border-radius:16px;padding:22px;text-align:center;color:#9d96bf;cursor:pointer;transition:border-color .2s,background .2s}
+#drop.over{border-color:#7dd3fc;background:rgba(125,211,252,.08)}
+ol{list-style:none;padding:0;margin:14px 0;max-height:40vh;overflow:auto}
+li{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer}
+li:hover{background:#221e33}li.now{background:#2a2540;color:#7dd3fc}
+li small{margin-left:auto;color:#9d96bf}
+.bar{display:flex;gap:10px;align-items:center}
+button{background:#7dd3fc;color:#15131c;border:0;border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:#ece8ff;border:1px solid #3b3556}
+input[type=range]{accent-color:#7dd3fc;flex:1}
+#viz{width:100%;height:56px;display:block;margin-top:10px}
+.note{color:#9d96bf;font-size:12px;margin-top:10px}
+</style>
+<div class="card">
+  <h1>Music Player</h1>
+  <div id="drop" tabindex="0" role="button">Drop songs here, or click to choose (mp3, ogg, wav, m4a)</div>
+  <input id="pick" type="file" accept="audio/*" multiple hidden>
+  <ol id="list"></ol>
+  <div class="bar">
+    <button class="ghost" id="prev" aria-label="previous">&#9664;&#9664;</button>
+    <button id="play">play</button>
+    <button class="ghost" id="next" aria-label="next">&#9654;&#9654;</button>
+    <input id="seek" type="range" min="0" max="1000" value="0" aria-label="position">
+  </div>
+  <canvas id="viz" width="460" height="56"></canvas>
+  <div class="note">Your songs never leave this device. The plug has no internet, no storage and no access to your files beyond the ones you drop in.</div>
+</div>
+<script>
+// Songs are opened as local "blob" addresses: played from memory, never uploaded, gone when you close it.
+var tracks = [], now = -1, audio = new Audio(), ctx = null, analyser = null;
+var list = document.getElementById('list'), playBtn = document.getElementById('play'), seek = document.getElementById('seek');
+
+function add(files) {
+  Array.prototype.forEach.call(files, function (f) {
+    if (!/^audio\//.test(f.type) && !/\.(mp3|ogg|wav|m4a|flac)$/i.test(f.name)) return;
+    tracks.push({ name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) });
+  });
+  draw();
+  if (now < 0 && tracks.length) load(0);
+}
+function draw() {
+  list.textContent = '';
+  tracks.forEach(function (t, i) {
+    var li = document.createElement('li'); li.className = i === now ? 'now' : '';
+    li.appendChild(document.createTextNode((i + 1) + '. ' + t.name));
+    li.onclick = function () { load(i); play(); };
+    list.appendChild(li);
+  });
+}
+// Free the songs' memory when the player closes.
+addEventListener('pagehide', function () { tracks.forEach(function (t) { URL.revokeObjectURL(t.url); }); });
+function load(i) { now = (i + tracks.length) % tracks.length; audio.src = tracks[now].url; draw(); }
+function play() {
+  if (!tracks.length) return;
+  if (!ctx) {                                   // sound starts after your first tap
+    ctx = new AudioContext(); analyser = ctx.createAnalyser(); analyser.fftSize = 128;
+    ctx.createMediaElementSource(audio).connect(analyser); analyser.connect(ctx.destination); viz();
+  }
+  audio.paused ? audio.play() : audio.pause();
+}
+audio.onplay = function () { playBtn.textContent = 'pause'; };
+audio.onpause = function () { playBtn.textContent = 'play'; };
+audio.onended = function () { load(now + 1); audio.play(); };
+audio.ontimeupdate = function () { if (audio.duration) seek.value = Math.round(audio.currentTime / audio.duration * 1000); };
+seek.oninput = function () { if (audio.duration) audio.currentTime = seek.value / 1000 * audio.duration; };
+playBtn.onclick = play;
+document.getElementById('next').onclick = function () { if (tracks.length) { load(now + 1); audio.play(); } };
+document.getElementById('prev').onclick = function () { if (tracks.length) { load(now - 1); audio.play(); } };
+
+var drop = document.getElementById('drop'), pick = document.getElementById('pick');
+drop.onclick = function () { pick.click(); };
+drop.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') pick.click(); };
+pick.onchange = function () { add(pick.files); pick.value = ''; };
+['dragenter', 'dragover'].forEach(function (t) { addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+['dragleave', 'drop'].forEach(function (t) { addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+addEventListener('drop', function (e) { add(e.dataTransfer.files); });
+
+// A small visualiser; it sleeps when paused or hidden.
+var vc = document.getElementById('viz').getContext('2d');
+function viz() {
+  requestAnimationFrame(viz);
+  if (audio.paused || document.hidden) return;
+  var d = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(d);
+  vc.clearRect(0, 0, 460, 56);
+  var w = 460 / d.length;
+  for (var i = 0; i < d.length; i++) { var h = d[i] / 255 * 54; vc.fillStyle = 'hsl(' + (190 + i) + ' 90% 70%)'; vc.fillRect(i * w, 56 - h, w - 2, h); }
+}
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

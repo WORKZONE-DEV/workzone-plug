@@ -1,0 +1,122 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Beat Pad</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#15131c;color:#ece8ff;font:14px/1.4 system-ui,sans-serif}
+.wrap{width:min(560px,94vw)}
+h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#ff6fae;margin:0 0 12px}
+.row{display:grid;grid-template-columns:56px repeat(16,1fr);gap:4px;margin-bottom:4px;align-items:center}
+.row b{font:600 11px ui-monospace,Consolas,monospace;color:#9d96bf}
+.pad{aspect-ratio:1;border-radius:6px;border:0;background:#2a2540;cursor:pointer;padding:0}
+.pad:nth-child(4n+2){background:#332d4d}
+.pad.on{background:#ff6fae}
+.pad.now{outline:2px solid #8fa3ff;outline-offset:1px}
+.bar{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+button.big{background:#ff6fae;color:#15131c;border:0;border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer}
+input[type=range]{accent-color:#ff6fae}
+small{color:#9d96bf}
+@media (max-width:480px){.row{gap:2px;grid-template-columns:44px repeat(8,1fr)!important}.row b{grid-row:span 2}}
+</style>
+<div class="wrap">
+  <h1>Beat Pad</h1>
+  <div id="grid"></div>
+  <div class="bar">
+    <button class="big" id="play">play</button>
+    <label>tempo <input id="tempo" type="range" min="60" max="180" value="112"> <span id="bpm"></span> bpm</label>
+    <small>tap squares to make a beat</small>
+  </div>
+</div>
+<script>
+// ---------------------------------------------------------------------------
+// Learn by changing things: press "edit code", change a number marked CHANGE ME,
+// press Save & run, and listen to the difference.
+// ---------------------------------------------------------------------------
+var STEPS = 16;                               // CHANGE ME: try 8 or 12 for a different feel
+var START_BEAT = {                            // CHANGE ME: 1 = hit, 0 = rest (16 per row)
+  kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0],
+  snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+  hat:   [1,0,1,0, 1,0,1,0, 1,0,1,1, 1,0,1,0],
+  clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1]
+};
+var KICK_PITCH = 120;                         // CHANGE ME: lower = deeper kick (try 60)
+var HAT_LENGTH = 0.05;                        // CHANGE ME: longer = more open hi-hat (try 0.2)
+
+var audio = null, playing = false, step = 0, timer = null;
+var rows = Object.keys(START_BEAT), beat = {};
+rows.forEach(function (r) { beat[r] = START_BEAT[r].slice(0, STEPS); while (beat[r].length < STEPS) beat[r].push(0); });
+
+// ---- the sounds: made from scratch with the browser's sound engine, no sound files needed
+function noise(len) {
+  var b = audio.createBuffer(1, audio.sampleRate * len, audio.sampleRate), d = b.getChannelData(0);
+  for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  var s = audio.createBufferSource(); s.buffer = b; return s;
+}
+function env(node, t, peak, len) {
+  var g = audio.createGain(); g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+  node.connect(g); g.connect(audio.destination); return g;
+}
+var SOUNDS = {
+  kick: function (t) {
+    var o = audio.createOscillator(); o.frequency.setValueAtTime(KICK_PITCH, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+    env(o, t, 0.8, 0.3); o.start(t); o.stop(t + 0.3);
+  },
+  snare: function (t) {
+    var n = noise(0.2), f = audio.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1200;
+    n.connect(f); env(f, t, 0.6, 0.18); n.start(t);
+  },
+  hat: function (t) {
+    var n = noise(HAT_LENGTH + 0.02), f = audio.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000;
+    n.connect(f); env(f, t, 0.35, HAT_LENGTH); n.start(t);
+  },
+  clap: function (t) {
+    [0, 0.012, 0.024].forEach(function (d) {
+      var n = noise(0.1), f = audio.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500;
+      n.connect(f); env(f, t + d, 0.5, 0.08); n.start(t + d);
+    });
+  }
+};
+
+// ---- the grid
+var grid = document.getElementById('grid'), pads = {};
+rows.forEach(function (r) {
+  var row = document.createElement('div'); row.className = 'row';
+  var name = document.createElement('b'); name.textContent = r; row.appendChild(name);
+  pads[r] = [];
+  for (var i = 0; i < STEPS; i++) (function (i) {
+    var p = document.createElement('button'); p.className = 'pad' + (beat[r][i] ? ' on' : '');
+    p.setAttribute('aria-label', r + ' step ' + (i + 1));
+    p.setAttribute('aria-pressed', String(!!beat[r][i]));
+    p.onclick = function () { beat[r][i] ^= 1; p.classList.toggle('on', !!beat[r][i]); p.setAttribute('aria-pressed', String(!!beat[r][i])); };
+    row.appendChild(p); pads[r].push(p);
+  })(i);
+  grid.appendChild(row);
+});
+grid.querySelectorAll('.row').forEach(function (row) { row.style.gridTemplateColumns = '56px repeat(' + STEPS + ',1fr)'; });
+
+// ---- play
+var tempo = document.getElementById('tempo'), bpm = document.getElementById('bpm');
+function stepTime() { return 60 / Number(tempo.value) / 4; }  // four steps per beat
+tempo.oninput = function () { bpm.textContent = tempo.value; };
+tempo.oninput();
+function tick() {
+  var t = audio.currentTime + 0.02;
+  rows.forEach(function (r) {
+    pads[r].forEach(function (p, i) { p.classList.toggle('now', i === step); });
+    if (beat[r][step]) SOUNDS[r](t);
+  });
+  parent.postMessage({ topic: 'event.publish', name: 'beat.step', data: step }, '*');  // link it to another plug!
+  step = (step + 1) % STEPS;
+  timer = setTimeout(tick, stepTime() * 1000);
+}
+document.getElementById('play').onclick = function () {
+  if (!audio) audio = new AudioContext();       // sound can only start after a tap
+  playing = !playing;
+  this.textContent = playing ? 'stop' : 'play';
+  if (playing) tick(); else { clearTimeout(timer); rows.forEach(function (r) { pads[r].forEach(function (p) { p.classList.remove('now'); }); }); }
+};
+document.addEventListener('visibilitychange', function () {   // hidden: stop, and let the sound engine sleep
+  if (document.hidden && playing) document.getElementById('play').click();
+  if (audio) { if (document.hidden) audio.suspend(); else audio.resume(); }
+});
+parent.postMessage({ topic: 'plug.ready' }, '*');
+</script>

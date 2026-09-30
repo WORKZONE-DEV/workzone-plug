@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+# Private keys never go in the repo
+*.key
+keys/
+# Built plugs are outputs, rebuild from source
+*.plug
+
+# Local notes
+_private/
